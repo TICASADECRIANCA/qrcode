@@ -107,62 +107,86 @@
         c.appendChild(div);
     }
 
-    async function processarGeracao() {
-        const pai = document.getElementById('pai').value;
-        const email = document.getElementById('emailPai').value;
-        const nomes = document.querySelectorAll('.nome-aluno');
-        const mats = document.querySelectorAll('.mat-aluno');
+   async function processarGeracao() {
+    const pai = document.getElementById('pai').value;
+    const email = document.getElementById('emailPai').value;
+    const nomes = document.querySelectorAll('.nome-aluno');
+    const mats = document.querySelectorAll('.mat-aluno');
 
-        if(!pai || !email) return alert("Por favor, preencha o seu nome e e-mail.");
+    if(!pai || !email) return alert("Por favor, preencha o seu nome e e-mail.");
 
-        // Inicia carregamento
-        document.getElementById('modalIngresso').classList.add('hidden');
-        document.getElementById('overlay').classList.remove('hidden');
+    document.getElementById('modalIngresso').classList.add('hidden');
+    document.getElementById('overlay').classList.remove('hidden');
 
-        try {
-            let htmlIngressos = "";
+    try {
+        let htmlIngressos = "";
 
-            for(let i=0; i<nomes.length; i++) {
-                const n = nomes[i].value;
-                const m = mats[i].value;
-                if(!n || !m) continue;
+        for(let i=0; i<nomes.length; i++) {
+            const n = nomes[i].value;
+            const m = mats[i].value;
+            if(!n || !m) continue;
 
-                // Teste de conexão com Firebase
-                console.log("Tentando gravar matrícula:", m);
-                const snap = await db.ref('ingressos/' + m).once('value');
-                
-                if(snap.val() && snap.val().qtd >= 3) {
-                    throw new Error(`O aluno ${n} já atingiu o limite.`);
-                }
-
-                await db.ref('ingressos/' + m).set({
-                    aluno: n, responsavel: pai, email: email, qtd: 3, data: new Date().toLocaleString()
-                });
-
-                htmlIngressos += `<div style="border: 2px solid #2563eb; padding: 15px; border-radius: 15px; margin-bottom: 20px;">
-                    <h4 style="color:#2563eb;">ALUNO: ${n.toUpperCase()}</h4>`;
-                
-                for(let j=1; j<=3; j++) {
-                    const id = `TKT-${m}-${j}`;
-                    const qrUrl = `https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=${id}`;
-                    htmlIngressos += `
-                        <div style="display:inline-block; margin: 5px; text-align:center; border: 1px solid #ddd; padding: 10px; border-radius: 8px;">
-                            <img src="${qrUrl}" width="100" height="100"><br>
-                            <span style="font-size:9px; color:#999;">${id}</span>
-                        </div>`;
-                }
-                htmlIngressos += `</div>`;
-            }
-
-            // Envio do Email
-            console.log("Enviando e-mail via EmailJS...");
-            await emailjs.send("service_99hr5od", "template_4yvqw5g", {
-                nome_responsavel: pai,
-                to_email: email,
-                detalhes_ingressos: htmlIngressos
+            // Gravação no Firebase
+            await db.ref('ingressos/' + m).set({
+                aluno: n, responsavel: pai, email: email, qtd: 3, data: new Date().toLocaleString()
             });
 
-            mostrarSucesso();
+            htmlIngressos += `<div style="border: 2px solid #2563eb; padding: 15px; border-radius: 15px; margin-bottom: 20px; font-family: sans-serif;">
+                <h4 style="color:#2563eb; margin:0;">ALUNO: ${n.toUpperCase()}</h4><br>`;
+            
+            for(let j=1; j<=3; j++) {
+                const id = `TKT-${m}-${j}`;
+                const qrUrl = `https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=${id}`;
+                htmlIngressos += `
+                    <div style="display:inline-block; margin: 5px; text-align:center; border: 1px solid #eee; padding: 5px;">
+                        <img src="${qrUrl}" width="100" height="100"><br>
+                        <span style="font-size:8px; color:#666;">${id}</span>
+                    </div>`;
+            }
+            htmlIngressos += `</div>`;
+        }
+
+        // Parâmetros corrigidos para o seu template
+        const templateParams = {
+            nome_responsavel: pai,
+            to_email: email,
+            detalhes_ingressos: htmlIngressos,
+            title: "Festa da Família" // Adicionado para evitar o erro 400 no Subject
+        };
+
+        await emailjs.send("service_99hr5od", "template_4yvqw5g", templateParams);
+        
+        mostrarSucesso();
+
+    } catch (err) {
+        console.error("Erro detalhado:", err);
+        alert("Erro no processo: " + (err.text || err.message || "Falha na comunicação"));
+        
+        // Destrava a tela para o usuário tentar de novo
+        document.getElementById('overlay').classList.add('hidden');
+        document.getElementById('modalIngresso').classList.remove('hidden');
+    }
+}
+
+         // Envio do Email
+            console.log("Enviando e-mail via EmailJS...");
+            
+            const templateParams = {
+                nome_responsavel: pai,
+                to_email: email,
+                detalhes_ingressos: htmlIngressos // VERIFIQUE SE NO TEMPLATE ESTÁ ASSIM
+            };
+
+            emailjs.send("service_99hr5od", "template_4yvqw5g", templateParams)
+                .then((response) => {
+                   console.log('SUCESSO!', response.status, response.text);
+                   mostrarSucesso();
+                })
+                .catch((error) => {
+                   console.error('FALHA NO EMAILJS:', error);
+                   alert("Erro no envio do e-mail: " + JSON.stringify(error));
+                   document.getElementById('overlay').classList.add('hidden');
+                });
 
         } catch (err) {
             // SE DER ERRO, ELE VOLTA PARA A TELA E MOSTRA O MOTIVO
@@ -184,4 +208,5 @@
     
 </body>
 </html>
+
 
