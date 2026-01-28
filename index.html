@@ -21,15 +21,16 @@
     <div id="overlay" class="hidden fixed inset-0 bg-white/95 z-[100] flex flex-col items-center justify-center">
         <div id="loaderIcon" class="loader mb-4"></div>
         <div id="successCheck" class="hidden text-green-500 text-6xl mb-4">✓</div>
-        <h3 id="statusMsg" class="text-xl font-bold">Processando Ingressos...</h3>
-        <p id="subStatusMsg" class="text-gray-500 text-center px-4 mt-2">Criando QR Codes em alta definição.</p>
+        <h3 id="statusMsg" class="text-xl font-bold">Processando...</h3>
+        <p id="subStatusMsg" class="text-gray-500 text-center px-4 mt-2 italic">Gerando ingressos e preparando e-mail.</p>
     </div>
 
-    <nav class="bg-white p-4 shadow-sm flex justify-between items-center px-8 border-b">
+    <nav class="bg-white p-4 shadow-sm flex flex-wrap justify-between items-center px-4 md:px-8 border-b">
         <div class="text-2xl font-black text-blue-600 tracking-tighter">ESCOLAPRO</div>
-        <div class="flex gap-2">
-            <a href="admin.html" class="bg-gray-100 text-gray-600 px-4 py-2 rounded-xl text-xs font-bold uppercase hover:bg-blue-600 hover:text-white transition">Lista</a>
-            <a href="cadastrar_evento.html" class="bg-blue-100 text-blue-600 px-4 py-2 rounded-xl text-xs font-bold uppercase hover:bg-blue-600 hover:text-white transition">⚙️ Eventos</a>
+        <div class="flex items-center gap-2 mt-2 md:mt-0">
+            <a href="validar.html" class="bg-slate-800 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase hover:bg-black transition">📷 Portaria</a>
+            <a href="admin.html" class="bg-gray-100 text-gray-600 px-4 py-2 rounded-xl text-xs font-bold uppercase">Lista</a>
+            <a href="cadastrar_evento.html" class="bg-blue-100 text-blue-600 px-4 py-2 rounded-xl text-xs font-bold uppercase">⚙️ Eventos</a>
         </div>
     </nav>
 
@@ -40,19 +41,19 @@
 
     <div id="modalIngresso" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-[2.5rem] p-8 max-w-lg w-full shadow-2xl overflow-y-auto max-h-[90vh]">
-            <h3 id="nomeEventoModal" class="text-2xl font-black mb-4">Solicitar Ingresso</h3>
+            <h3 id="nomeEventoModal" class="text-2xl font-black mb-4 tracking-tight text-blue-600">Solicitar Ingresso</h3>
             <div class="space-y-4">
-                <input type="text" id="pai" placeholder="Nome do Responsável" class="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 ring-blue-500">
-                <input type="email" id="emailPai" placeholder="Seu E-mail" class="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 ring-blue-500">
+                <input type="text" id="pai" placeholder="Nome do Responsável" class="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 ring-blue-500 border-none">
+                <input type="email" id="emailPai" placeholder="E-mail para recebimento" class="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 ring-blue-500 border-none">
                 <div id="containerFilhos" class="space-y-4 pt-4 border-t">
                     <div class="p-4 bg-blue-50 rounded-2xl border border-blue-100">
                         <input type="text" placeholder="Nome do Aluno" class="nome-aluno w-full bg-transparent font-bold outline-none">
-                        <input type="number" placeholder="Matrícula" class="mat-aluno w-full bg-transparent outline-none border-t border-blue-200 mt-2 pt-2 text-sm">
+                        <input type="number" placeholder="Nº Matrícula" class="mat-aluno w-full bg-transparent outline-none border-t border-blue-200 mt-2 pt-2 text-sm">
                     </div>
                 </div>
-                <button onclick="adicionarFilho()" class="text-blue-600 font-bold text-xs w-full py-2 uppercase">+ Adicionar Aluno</button>
-                <button onclick="processarGeracao()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg">Gerar Ingressos</button>
-                <button onclick="fecharModal()" class="w-full text-gray-400 py-2">Cancelar</button>
+                <button onclick="adicionarFilho()" class="text-blue-600 font-bold text-xs w-full py-2 uppercase hover:bg-blue-50 rounded-xl transition">+ Adicionar Aluno</button>
+                <button onclick="processarGeracao()" class="w-full bg-blue-600 text-white py-4 rounded-3xl font-bold text-lg shadow-lg hover:bg-blue-700 transition-all">GERAR MEU INGRESSO PDF</button>
+                <button onclick="fecharModal()" class="w-full text-gray-400 py-2 font-bold uppercase text-xs">Cancelar</button>
             </div>
         </div>
     </div>
@@ -60,6 +61,7 @@
     <div id="qrcode-temp" style="display:none"></div>
 
     <script>
+        // CONFIGURAÇÃO FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyA-F2p-sNG9ED7rpZ8uZ5_OxyiggdOfvfc",
             authDomain: "ingressoscdc.firebaseapp.com",
@@ -75,18 +77,19 @@
 
         let eventoAtual = "";
 
-        db.ref('eventos').on('value', (snapshot) => {
+        // CARREGA EVENTOS DO BANCO
+        db.ref('eventos').on('value', (snap) => {
             const container = document.getElementById('listaEventos');
             container.innerHTML = "";
-            snapshot.forEach((item) => {
+            snap.forEach((item) => {
                 const ev = item.val();
                 container.innerHTML += `
-                    <div class="bg-white rounded-[2rem] shadow-sm border overflow-hidden">
+                    <div class="bg-white rounded-[2rem] shadow-sm border overflow-hidden hover:shadow-md transition">
                         <div class="h-40 bg-cover bg-center" style="background-image: url('${ev.imagem || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800'}')"></div>
                         <div class="p-6">
-                            <h3 class="text-xl font-bold">${ev.nome}</h3>
-                            <p class="text-blue-600 font-bold mb-4">${ev.data}</p>
-                            <button onclick="abrirModal('${ev.nome}')" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">Garantir Ingressos</button>
+                            <h3 class="text-xl font-bold text-gray-800">${ev.nome}</h3>
+                            <p class="text-blue-600 font-bold mb-4 text-sm">${ev.data}</p>
+                            <button onclick="abrirModal('${ev.nome}')" class="w-full bg-blue-600 text-white py-3 rounded-2xl font-bold hover:bg-blue-700 transition">Solicitar</button>
                         </div>
                     </div>`;
             });
@@ -94,12 +97,10 @@
 
         function abrirModal(n) { eventoAtual = n; document.getElementById('nomeEventoModal').innerText = n; document.getElementById('modalIngresso').classList.remove('hidden'); }
         function fecharModal() { document.getElementById('modalIngresso').classList.add('hidden'); }
-        
         function adicionarFilho() {
             const div = document.createElement('div');
             div.className = "p-4 bg-blue-50 rounded-2xl border border-blue-100";
-            div.innerHTML = `<input type="text" placeholder="Nome do Aluno" class="nome-aluno w-full bg-transparent font-bold outline-none">
-                             <input type="number" placeholder="Matrícula" class="mat-aluno w-full bg-transparent outline-none border-t border-blue-200 mt-2 pt-2 text-sm">`;
+            div.innerHTML = `<input type="text" placeholder="Nome do Aluno" class="nome-aluno w-full bg-transparent font-bold outline-none"><input type="number" placeholder="Nº Matrícula" class="mat-aluno w-full bg-transparent outline-none border-t border-blue-200 mt-2 pt-2 text-sm">`;
             document.getElementById('containerFilhos').appendChild(div);
         }
 
@@ -111,27 +112,30 @@
             const nomes = document.querySelectorAll('.nome-aluno');
             const mats = document.querySelectorAll('.mat-aluno');
 
-            if(!pai || !email) return alert("Preencha Nome e E-mail!");
+            if(!pai || !email) return alert("Por favor, preencha todos os campos!");
 
             document.getElementById('modalIngresso').classList.add('hidden');
             document.getElementById('overlay').classList.remove('hidden');
 
             try {
+                let alunosNomes = [];
+
                 for(let i=0; i<nomes.length; i++) {
                     const n = nomes[i].value;
                     const m = mats[i].value;
                     if(!n || !m) continue;
+                    alunosNomes.push(n);
 
                     if(i > 0) doc.addPage();
                     
-                    // Design do PDF
+                    // DESIGN DO INGRESSO
                     doc.setFillColor(37, 99, 235);
                     doc.rect(0, 0, 210, 40, 'F');
                     doc.setTextColor(255, 255, 255);
                     doc.setFontSize(22);
                     doc.text("ESCOLAPRO", 20, 25);
                     doc.setFontSize(10);
-                    doc.text("COMPROVANTE DE INGRESSO DIGITAL", 20, 32);
+                    doc.text("COMPROVANTE DE ENTRADA DIGITAL", 20, 32);
 
                     doc.setTextColor(0,0,0);
                     doc.setFontSize(16);
@@ -140,49 +144,57 @@
                     doc.text(`ALUNO: ${n}`, 20, 80);
                     doc.text(`MATRÍCULA: ${m}`, 20, 88);
                     doc.text(`RESPONSÁVEL: ${pai}`, 20, 96);
-                    doc.text(`DATA: ${new Date().toLocaleDateString()}`, 20, 104);
+                    doc.text(`EMITIDO EM: ${new Date().toLocaleString()}`, 20, 104);
 
-                    // Geração dos QR Codes
+                    // GERAR QR CODES
                     for(let j=1; j<=3; j++) {
                         const id = `TKT-${m}-${j}`;
                         const qrDiv = document.getElementById('qrcode-temp');
-                        qrDiv.innerHTML = ""; // Limpa para o próximo
+                        qrDiv.innerHTML = "";
                         
-                        // Gera o QR Code fisicamente no navegador
-                        new QRCode(qrDiv, { text: id, width: 256, height: 256, correctLevel: QRCode.CorrectLevel.H });
-                        
-                        // Pequena pausa para garantir que o canvas foi criado
-                        await new Promise(r => setTimeout(r, 150));
+                        // Gera o QR localmente como imagem
+                        new QRCode(qrDiv, { text: id, width: 256, height: 256 });
+                        await new Promise(r => setTimeout(r, 200));
                         
                         const canvas = qrDiv.querySelector('canvas');
-                        const qrImgData = canvas.toDataURL("image/png");
+                        const qrImg = canvas.toDataURL("image/png");
 
-                        // Adiciona no PDF
-                        doc.addImage(qrImgData, 'PNG', 20 + ((j-1) * 60), 125, 40, 40);
+                        doc.addImage(qrImg, 'PNG', 20 + ((j-1) * 60), 125, 40, 40);
                         doc.setFontSize(7);
                         doc.text(id, 20 + ((j-1) * 60) + 20, 170, {align:'center'});
                     }
 
-                    await db.ref('ingressos/' + m).set({ aluno: n, responsavel: pai, evento: eventoAtual, data: new Date().toLocaleString() });
+                    // SALVA NO FIREBASE
+                    await db.ref('ingressos/' + m).set({ 
+                        aluno: n, 
+                        responsavel: pai, 
+                        evento: eventoAtual, 
+                        utilizado: false, 
+                        dataGeracao: new Date().toLocaleString() 
+                    });
                 }
 
-                // Baixa o arquivo
-                doc.save(`Ingressos_${pai.replace(/\s+/g, '_')}.pdf`);
+                // DOWNLOAD DO PDF
+                doc.save(`Ingressos_ESCOLAPRO_${pai}.pdf`);
 
-                // Envia e-mail de confirmação
+                // ENVIO DO EMAIL (Sem QR Code direto, pois o PDF é o anexo oficial que ele acabou de baixar)
                 await emailjs.send("service_r1vrjkp", "template_4yvqw5g", {
-                    nome_responsavel: pai, to_email: email, title: eventoAtual
+                    nome_responsavel: pai,
+                    to_email: email,
+                    evento: eventoAtual,
+                    alunos: alunosNomes.join(", ")
                 });
 
+                // FINALIZAÇÃO
                 document.getElementById('loaderIcon').classList.add('hidden');
                 document.getElementById('successCheck').classList.remove('hidden');
-                document.getElementById('statusMsg').innerText = "Sucesso!";
-                document.getElementById('subStatusMsg').innerText = "O PDF foi baixado com seus QR Codes.";
-                setTimeout(() => location.reload(), 4000);
+                document.getElementById('statusMsg').innerText = "INGRESSOS GERADOS!";
+                document.getElementById('subStatusMsg').innerText = "O PDF com os QR CODES foi baixado. Confira seu e-mail para confirmação.";
+                setTimeout(() => location.reload(), 5000);
 
             } catch (err) {
                 console.error(err);
-                alert("Houve um problema na geração. Tente novamente.");
+                alert("Erro ao processar. Tente novamente.");
                 document.getElementById('overlay').classList.add('hidden');
             }
         }
