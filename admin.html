@@ -3,74 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Controle de Acesso</title>
+    <title>Admin - Gestão de Ingressos</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 flex min-h-screen">
-
-    <aside class="w-64 bg-gray-900 text-white p-6 hidden md:block">
-        <h2 class="text-xl font-black mb-10 text-blue-400">ADMIN CONTROL</h2>
-        <nav class="space-y-4">
-            <a href="#" class="block p-3 bg-blue-600 rounded-xl font-bold">Dashboard</a>
-            <a href="#" class="block p-3 text-gray-400 hover:bg-gray-800 rounded-xl transition">Lista de Alunos</a>
-            <a href="#" class="block p-3 text-gray-400 hover:bg-gray-800 rounded-xl transition">Configurações</a>
-        </nav>
-    </aside>
-
-    <main class="flex-1 p-8">
+<body class="bg-gray-100 p-8">
+    <div class="max-w-6xl mx-auto">
         <header class="flex justify-between items-center mb-10">
-            <h1 class="text-3xl font-black text-gray-800">Visão Geral</h1>
-            <button onclick="gerarAvulso()" class="bg-green-600 text-white px-6 py-3 rounded-2xl font-bold shadow-lg hover:bg-green-700">Gerar Ingresso Extra</button>
+            <h1 class="text-3xl font-black text-gray-800 tracking-tighter">ADMIN <span class="text-blue-600">PANEL</span></h1>
+            <div class="flex gap-4">
+                <button onclick="location.href='index.html'" class="bg-white border px-6 py-2 rounded-xl font-bold text-sm">Ver Site</button>
+                <button onclick="gerarExtra()" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold text-sm shadow-lg shadow-blue-200">Ingresso Extra</button>
+            </div>
         </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-200">
-                <p class="text-gray-400 font-bold uppercase text-xs">Total de Ingressos</p>
-                <h3 class="text-4xl font-black mt-2">1.240</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white p-8 rounded-3xl shadow-sm border border-gray-200">
+                <p class="text-gray-400 text-xs font-bold uppercase">Total Gerado</p>
+                <h2 id="totalGeral" class="text-5xl font-black mt-2">0</h2>
             </div>
-            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-200">
-                <p class="text-gray-400 font-bold uppercase text-xs">Ingressos Extras</p>
-                <h3 class="text-4xl font-black mt-2 text-orange-500">12</h3>
-            </div>
-            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-200">
-                <p class="text-gray-400 font-bold uppercase text-xs">Capacidade Restante</p>
-                <h3 class="text-4xl font-black mt-2 text-blue-600">760</h3>
+            <div class="bg-white p-8 rounded-3xl shadow-sm border border-gray-200">
+                <p class="text-gray-400 text-xs font-bold uppercase">Famílias Atendidas</p>
+                <h2 id="totalFamilias" class="text-5xl font-black mt-2 text-blue-600">0</h2>
             </div>
         </div>
 
-        <div class="bg-white rounded-[2rem] shadow-sm border border-gray-200 overflow-hidden">
-            <div class="p-6 border-b font-bold text-gray-700">Logs de Geração Recentes</div>
-            <table class="w-full text-left border-collapse">
-                <thead class="bg-gray-50 text-gray-400 text-xs uppercase font-black">
+        <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
+            <table class="w-full text-left">
+                <thead class="bg-gray-50 border-b">
                     <tr>
-                        <th class="p-4">Responsável</th>
-                        <th class="p-4">Matrícula</th>
-                        <th class="p-4">Data/Hora</th>
-                        <th class="p-4">Status</th>
+                        <th class="p-5 text-xs font-bold text-gray-400 uppercase">Responsável</th>
+                        <th class="p-5 text-xs font-bold text-gray-400 uppercase">Aluno (Matrícula)</th>
+                        <th class="p-5 text-xs font-bold text-gray-400 uppercase">Data</th>
+                        <th class="p-5 text-xs font-bold text-gray-400 uppercase">Ações</th>
                     </tr>
                 </thead>
-                <tbody class="text-sm">
-                    <tr class="border-b hover:bg-gray-50 transition">
-                        <td class="p-4 font-bold">Ricardo Alencar</td>
-                        <td class="p-4 text-gray-500">12345</td>
-                        <td class="p-4 text-gray-400">28/05/2026 - 14:20</td>
-                        <td class="p-4"><span class="bg-green-100 text-green-600 px-3 py-1 rounded-full text-[10px] font-black uppercase">Padrão (3)</span></td>
-                    </tr>
-                    <tr class="border-b hover:bg-gray-50 transition">
-                        <td class="p-4 font-bold">Admin (Avulso)</td>
-                        <td class="p-4 text-gray-500">99900</td>
-                        <td class="p-4 text-gray-400">28/05/2026 - 10:15</td>
-                        <td class="p-4"><span class="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-[10px] font-black uppercase">Extra (+1)</span></td>
-                    </tr>
-                </tbody>
+                <tbody id="listaAdmin"></tbody>
             </table>
         </div>
-    </main>
+    </div>
 
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <script>
-        function gerarAvulso() {
-            const mat = prompt("Digite a matrícula para o ingresso extra:");
-            if(mat) alert("Ingresso EXTRA gerado com sucesso para a matrícula: " + mat);
+        const firebaseConfig = {
+            apiKey: "AIzaSyBN-Dc3Tkv1-MAP4p-r5rDwlK1z41HsOq8",
+            authDomain: "qrcode-752fb.firebaseapp.com",
+            databaseURL: "https://qrcode-752fb-default-rtdb.firebaseio.com",
+            projectId: "qrcode-752fb",
+            storageBucket: "qrcode-752fb.firebasestorage.app",
+            messagingSenderId: "503167640794",
+            appId: "1:503167640794:web:fdc313be001df6b5bdb1e3"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        db.ref('ingressos').on('value', (snap) => {
+            const lista = document.getElementById('listaAdmin');
+            const totalGeral = document.getElementById('totalGeral');
+            const totalFamilias = document.getElementById('totalFamilias');
+            lista.innerHTML = '';
+            let contadorIngressos = 0;
+            let contadorFamilias = 0;
+
+            snap.forEach((child) => {
+                const data = child.val();
+                contadorIngressos += (data.qtd || 0);
+                contadorFamilias++;
+                lista.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50 transition">
+                        <td class="p-5 font-bold">${data.responsavel}</td>
+                        <td class="p-5">${data.aluno} (${child.key})</td>
+                        <td class="p-5 text-gray-400 text-sm">${data.data}</td>
+                        <td class="p-5"><button onclick="remover('${child.key}')" class="text-red-500 font-bold text-xs uppercase">Limpar Cota</button></td>
+                    </tr>`;
+            });
+            totalGeral.innerText = contadorIngressos;
+            totalFamilias.innerText = contadorFamilias;
+        });
+
+        function remover(m) { if(confirm("Deseja resetar a cota desta matrícula?")) db.ref('ingressos/' + m).remove(); }
+        
+        async function gerarExtra() {
+            const m = prompt("Digite a matrícula para o ingresso extra:");
+            const n = prompt("Nome do aluno:");
+            if(m && n) await db.ref('ingressos/' + m).set({ aluno: n, responsavel: "ADMIN", qtd: 1, data: new Date().toLocaleString(), tipo: "EXTRA" });
         }
     </script>
 </body>
