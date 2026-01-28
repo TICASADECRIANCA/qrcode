@@ -2,47 +2,40 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Painel Administrativo - ESCOLAPRO</title>
+    <title>Configurar Eventos - ESCOLAPRO</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 </head>
-<body class="bg-gray-100 p-4 md:p-8">
+<body class="bg-gray-100 p-8">
 
-    <div id="loginSection" class="max-w-md mx-auto bg-white p-8 rounded-[2.5rem] shadow-2xl mt-20">
-        <h2 class="text-2xl font-black mb-6 text-center text-blue-600">Acesso Restrito</h2>
-        <input type="password" id="passInput" placeholder="Digite a senha admin" class="w-full p-4 bg-gray-50 rounded-2xl border-none mb-4 outline-none focus:ring-2 ring-blue-500">
-        <button onclick="verificarSenha()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg">Entrar no Painel</button>
+    <div id="login" class="max-w-md mx-auto bg-white p-10 rounded-[2.5rem] shadow-2xl mt-20">
+        <h2 class="text-2xl font-black mb-6 text-center">Área de Configuração</h2>
+        <input type="password" id="pw" placeholder="Senha Admin" class="w-full p-4 bg-gray-50 rounded-2xl mb-4 outline-none border-2 border-transparent focus:border-blue-500">
+        <button onclick="check()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold uppercase">Entrar</button>
     </div>
 
-    <div id="adminSection" class="hidden max-w-4xl mx-auto space-y-8">
-        <div class="bg-white p-8 rounded-[2.5rem] shadow-xl">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-3xl font-black text-gray-800">Novo Evento</h2>
-                <button onclick="logout()" class="text-red-500 font-bold text-sm uppercase">Sair</button>
+    <div id="painel" class="hidden max-w-4xl mx-auto">
+        <div class="bg-white p-8 rounded-[2.5rem] shadow-xl mb-8">
+            <div class="flex justify-between items-center mb-8">
+                <h1 class="text-3xl font-black italic">Criar Novo Evento</h1>
+                <a href="index.html" class="text-blue-600 font-bold underline">Voltar ao Site</a>
             </div>
-            
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input type="text" id="nomeEv" placeholder="Nome do Evento" class="p-4 bg-gray-50 rounded-2xl border-none outline-none">
-                <input type="text" id="dataEv" placeholder="Data (ex: 15 de Outubro)" class="p-4 bg-gray-50 rounded-2xl border-none outline-none">
-                <input type="text" id="imgEv" placeholder="Link da Imagem de Capa" class="p-4 bg-gray-50 rounded-2xl border-none outline-none md:col-span-2">
-                <button onclick="salvarEvento()" class="md:col-span-2 bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg hover:bg-blue-700 transition">Publicar no Portal</button>
+                <input type="text" id="n" placeholder="Nome do Evento" class="p-4 bg-gray-50 rounded-2xl outline-none">
+                <input type="text" id="d" placeholder="Data (ex: 20 de Dezembro)" class="p-4 bg-gray-50 rounded-2xl outline-none">
+                <input type="text" id="i" placeholder="URL da Imagem de Capa" class="md:col-span-2 p-4 bg-gray-50 rounded-2xl outline-none">
+                <button onclick="add()" class="md:col-span-2 bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg hover:bg-blue-700 transition">Publicar Evento</button>
             </div>
         </div>
 
         <div class="bg-white p-8 rounded-[2.5rem] shadow-xl">
-            <h3 class="text-xl font-black mb-4">Eventos Publicados</h3>
-            <div id="listaAtivos" class="grid grid-cols-1 gap-4">
-                </div>
-        </div>
-        
-        <div class="text-center">
-            <a href="index.html" class="text-blue-600 font-bold underline">Voltar para a Página Inicial</a>
+            <h2 class="font-bold mb-4 uppercase text-gray-400">Eventos Ativos</h2>
+            <div id="lista" class="space-y-3"></div>
         </div>
     </div>
 
     <script>
-        // Use as mesmas configurações do seu index.html
         const firebaseConfig = {
             apiKey: "AIzaSyA-F2p-sNG9ED7rpZ8uZ5_OxyiggdOfvfc",
             authDomain: "ingressoscdc.firebaseapp.com",
@@ -55,61 +48,35 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // DEFINA SUA SENHA AQUI
-        const SENHA_MESTRA = "123456"; 
-
-        function verificarSenha() {
-            const digitada = document.getElementById('passInput').value;
-            if(digitada === SENHA_MESTRA) {
-                document.getElementById('loginSection').classList.add('hidden');
-                document.getElementById('adminSection').classList.remove('hidden');
-                carregarEventos();
-            } else {
-                alert("Senha Incorreta!");
-            }
+        function check() {
+            if(document.getElementById('pw').value === "1992") {
+                document.getElementById('login').classList.add('hidden');
+                document.getElementById('painel').classList.remove('hidden');
+                load();
+            } else { alert("Senha incorreta"); }
         }
 
-        function logout() { location.reload(); }
-
-        function salvarEvento() {
-            const nome = document.getElementById('nomeEv').value;
-            const data = document.getElementById('dataEv').value;
-            const imagem = document.getElementById('imgEv').value;
-
-            if(!nome || !data) return alert("Nome e Data são obrigatórios!");
-
-            const id = Date.now();
-            db.ref('eventos/' + id).set({ nome, data, imagem }).then(() => {
-                alert("Evento publicado com sucesso!");
-                document.getElementById('nomeEv').value = "";
-                document.getElementById('dataEv').value = "";
-                document.getElementById('imgEv').value = "";
-            });
+        function add() {
+            const nome = document.getElementById('n').value;
+            const data = document.getElementById('d').value;
+            const imagem = document.getElementById('i').value;
+            if(!nome || !data) return alert("Campos vazios");
+            db.ref('eventos/' + Date.now()).set({nome, data, imagem}).then(() => location.reload());
         }
 
-        function carregarEventos() {
-            db.ref('eventos').on('value', (snap) => {
-                const container = document.getElementById('listaAtivos');
-                container.innerHTML = "";
+        function load() {
+            db.ref('eventos').on('value', snap => {
+                const l = document.getElementById('lista');
+                l.innerHTML = "";
                 snap.forEach(item => {
-                    const ev = item.val();
-                    container.innerHTML += `
-                        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                            <div>
-                                <p class="font-black text-gray-800">${ev.nome}</p>
-                                <p class="text-xs text-gray-400">${ev.data}</p>
-                            </div>
-                            <button onclick="remover('${item.key}')" class="bg-red-100 text-red-600 px-4 py-2 rounded-xl text-xs font-bold uppercase hover:bg-red-200 transition">Excluir</button>
-                        </div>`;
+                    l.innerHTML += `<div class="flex justify-between p-4 bg-gray-50 rounded-2xl items-center">
+                        <span class="font-bold">${item.val().nome}</span>
+                        <button onclick="del('${item.key}')" class="text-red-500 font-bold uppercase text-xs">Excluir</button>
+                    </div>`;
                 });
             });
         }
-
-        function remover(id) {
-            if(confirm("Tem certeza que deseja apagar este evento? Ele sumirá do site imediatamente.")) {
-                db.ref('eventos/' + id).remove();
-            }
-        }
+        function del(id) { if(confirm("Apagar evento?")) db.ref('eventos/'+id).remove(); }
     </script>
 </body>
 </html>
