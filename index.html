@@ -70,108 +70,118 @@
             </div>
         </div>
     </div>
+<script>
+    // Configurações Limpas
+    const firebaseConfig = {
+        apiKey: "AIzaSyA-F2p-sNG9ED7rpZ8uZ5_OxyiggdOfvfc",
+        authDomain: "ingressoscdc.firebaseapp.com",
+        databaseURL: "https://ingressoscdc-default-rtdb.firebaseio.com",
+        projectId: "ingressoscdc",
+        storageBucket: "ingressoscdc.firebasestorage.app",
+        messagingSenderId: "388023812522",
+        appId: "1:388023812522:web:1756fb37294146c0e5ebd3"
+    };
 
-    <script>
-        // CONFIGURAÇÕES FIREBASE (Corrigidas e Limpas)
-        const firebaseConfig = {
-            apiKey: "AIzaSyA-F2p-sNG9ED7rpZ8uZ5_OxyiggdOfvfc",
-            authDomain: "ingressoscdc.firebaseapp.com",
-            databaseURL: "https://ingressoscdc-default-rtdb.firebaseio.com",
-            projectId: "ingressoscdc",
-            storageBucket: "ingressoscdc.firebasestorage.app",
-            messagingSenderId: "388023812522",
-            appId: "1:388023812522:web:1756fb37294146c0e5ebd3"
-        };
+    // Inicialização
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    emailjs.init("RmJx_2rhtntD90vsH");
 
-        // Inicialização
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        emailjs.init("RmJx_2rhtntD90vsH");
+    function abrirModal(n) { 
+        document.getElementById('nomeEventoModal').innerText = n; 
+        document.getElementById('modalIngresso').classList.remove('hidden'); 
+    }
 
-        function abrirModal(n) { 
-            document.getElementById('nomeEventoModal').innerText = n; 
-            document.getElementById('modalIngresso').classList.remove('hidden'); 
-        }
+    function fecharModal() { 
+        document.getElementById('modalIngresso').classList.add('hidden'); 
+    }
 
-        function fecharModal() { 
-            document.getElementById('modalIngresso').classList.add('hidden'); 
-        }
+    function adicionarFilho() {
+        const c = document.getElementById('containerFilhos');
+        const div = document.createElement('div');
+        div.className = "p-5 bg-blue-50 rounded-3xl border border-blue-100 mt-4";
+        div.innerHTML = `
+            <label class="text-[10px] font-black text-blue-500 uppercase">Aluno ${c.children.length + 1}</label>
+            <input type="text" placeholder="Nome do Aluno" class="nome-aluno w-full bg-transparent outline-none mt-2 font-bold">
+            <input type="number" placeholder="Nº Matrícula" class="mat-aluno w-full bg-transparent outline-none border-t border-blue-200 mt-2 pt-2 text-sm">`;
+        c.appendChild(div);
+    }
 
-        function adicionarFilho() {
-            const c = document.getElementById('containerFilhos');
-            const div = document.createElement('div');
-            div.className = "p-5 bg-blue-50 rounded-3xl border border-blue-100 mt-4";
-            div.innerHTML = `
-                <label class="text-[10px] font-black text-blue-500 uppercase">Aluno ${c.children.length + 1}</label>
-                <input type="text" placeholder="Nome do Aluno" class="nome-aluno w-full bg-transparent outline-none mt-2 font-bold">
-                <input type="number" placeholder="Nº Matrícula" class="mat-aluno w-full bg-transparent outline-none border-t border-blue-200 mt-2 pt-2 text-sm">`;
-            c.appendChild(div);
-        }
+    async function processarGeracao() {
+        const pai = document.getElementById('pai').value;
+        const email = document.getElementById('emailPai').value;
+        const nomes = document.querySelectorAll('.nome-aluno');
+        const mats = document.querySelectorAll('.mat-aluno');
 
-        async function processarGeracao() {
-            const pai = document.getElementById('pai').value;
-            const email = document.getElementById('emailPai').value;
-            const nomes = document.querySelectorAll('.nome-aluno');
-            const mats = document.querySelectorAll('.mat-aluno');
+        if(!pai || !email) return alert("Por favor, preencha o seu nome e e-mail.");
 
-            if(!pai || !email) return alert("Por favor, preencha o seu nome e e-mail.");
+        // Inicia carregamento
+        document.getElementById('modalIngresso').classList.add('hidden');
+        document.getElementById('overlay').classList.remove('hidden');
 
-            document.getElementById('modalIngresso').classList.add('hidden');
-            document.getElementById('overlay').classList.remove('hidden');
-
+        try {
             let htmlIngressos = "";
 
-            try {
-                for(let i=0; i<nomes.length; i++) {
-                    const n = nomes[i].value;
-                    const m = mats[i].value;
-                    if(!n || !m) continue;
+            for(let i=0; i<nomes.length; i++) {
+                const n = nomes[i].value;
+                const m = mats[i].value;
+                if(!n || !m) continue;
 
-                    const snap = await db.ref('ingressos/' + m).once('value');
-                    if(snap.val() && snap.val().qtd >= 3) {
-                        throw new Error(`O aluno ${n} (${m}) já utilizou a cota.`);
-                    }
-
-                    await db.ref('ingressos/' + m).set({
-                        aluno: n, responsavel: pai, email: email, qtd: 3, data: new Date().toLocaleString()
-                    });
-
-                    htmlIngressos += `<div style="border: 2px solid #2563eb; padding: 15px; border-radius: 15px; margin-bottom: 20px;">
-                        <h4 style="color:#2563eb;">ALUNO: ${n.toUpperCase()}</h4>`;
-                    
-                    for(let j=1; j<=3; j++) {
-                        const id = `TKT-${m}-${j}`;
-                        const qrUrl = `https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=${id}`;
-                        htmlIngressos += `
-                            <div style="display:inline-block; margin: 5px; text-align:center; border: 1px solid #ddd; padding: 10px; border-radius: 8px;">
-                                <img src="${qrUrl}" width="100" height="100"><br>
-                                <span style="font-size:9px; color:#999;">${id}</span>
-                            </div>`;
-                    }
-                    htmlIngressos += `</div>`;
+                // Teste de conexão com Firebase
+                console.log("Tentando gravar matrícula:", m);
+                const snap = await db.ref('ingressos/' + m).once('value');
+                
+                if(snap.val() && snap.val().qtd >= 3) {
+                    throw new Error(`O aluno ${n} já atingiu o limite.`);
                 }
 
-                await emailjs.send("service_99hr5od", "template_4yvqw5g", {
-                    nome_responsavel: pai,
-                    to_email: email,
-                    detalhes_ingressos: htmlIngressos
+                await db.ref('ingressos/' + m).set({
+                    aluno: n, responsavel: pai, email: email, qtd: 3, data: new Date().toLocaleString()
                 });
 
-                mostrarSucesso();
-
-            } catch (err) {
-                alert("Erro: " + err.message);
-                document.getElementById('overlay').classList.add('hidden');
+                htmlIngressos += `<div style="border: 2px solid #2563eb; padding: 15px; border-radius: 15px; margin-bottom: 20px;">
+                    <h4 style="color:#2563eb;">ALUNO: ${n.toUpperCase()}</h4>`;
+                
+                for(let j=1; j<=3; j++) {
+                    const id = `TKT-${m}-${j}`;
+                    const qrUrl = `https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=${id}`;
+                    htmlIngressos += `
+                        <div style="display:inline-block; margin: 5px; text-align:center; border: 1px solid #ddd; padding: 10px; border-radius: 8px;">
+                            <img src="${qrUrl}" width="100" height="100"><br>
+                            <span style="font-size:9px; color:#999;">${id}</span>
+                        </div>`;
+                }
+                htmlIngressos += `</div>`;
             }
-        }
 
-        function mostrarSucesso() {
-            document.getElementById('loaderAnim').classList.add('hidden');
-            document.getElementById('successCheck').classList.remove('hidden');
-            document.getElementById('statusMsg').innerText = "Tudo Pronto!";
-            document.getElementById('subStatusMsg').innerText = "Verifique sua caixa de entrada em instantes.";
-            setTimeout(() => { location.reload(); }, 5000);
+            // Envio do Email
+            console.log("Enviando e-mail via EmailJS...");
+            await emailjs.send("service_99hr5od", "template_4yvqw5g", {
+                nome_responsavel: pai,
+                to_email: email,
+                detalhes_ingressos: htmlIngressos
+            });
+
+            mostrarSucesso();
+
+        } catch (err) {
+            // SE DER ERRO, ELE VOLTA PARA A TELA E MOSTRA O MOTIVO
+            console.error(err);
+            alert("ERRO DETECTADO: " + err.message);
+            document.getElementById('overlay').classList.add('hidden');
+            document.getElementById('modalIngresso').classList.remove('hidden');
         }
-    </script>
+    }
+
+    function mostrarSucesso() {
+        document.getElementById('loaderAnim').classList.add('hidden');
+        document.getElementById('successCheck').classList.remove('hidden');
+        document.getElementById('statusMsg').innerText = "Tudo Pronto!";
+        document.getElementById('subStatusMsg').innerText = "Verifique sua caixa de entrada.";
+        setTimeout(() => { location.reload(); }, 5000);
+    }
+</script>
+    
 </body>
 </html>
+
