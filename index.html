@@ -5,28 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal de Ingressos - Envio via E-mail</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     
     <style>
         .card-gradient { background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.7) 100%); }
-        .loader { border-top-color: #2563eb; animation: spinner 1.5s linear infinite; }
-        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #2563eb; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
 
-    <div id="overlay" class="hidden fixed inset-0 bg-white/90 backdrop-blur-sm z-[100] flex flex-col items-center justify-center transition-all">
-        <div id="loaderAnim" class="loader w-16 h-16 border-4 border-gray-200 rounded-full mb-4"></div>
+    <div id="overlay" class="hidden fixed inset-0 bg-white/90 backdrop-blur-sm z-[100] flex flex-col items-center justify-center">
+        <div id="loaderAnim" class="loader mb-4"></div>
         <div id="successCheck" class="hidden text-green-500 text-6xl mb-4">✓</div>
         <h3 id="statusMsg" class="text-xl font-bold">Enviando seus ingressos...</h3>
-        <p id="subStatusMsg" class="text-gray-500">Isso pode levar alguns segundos.</p>
+        <p id="subStatusMsg" class="text-gray-500 text-center px-4">Por favor, não feche esta página.</p>
     </div>
 
     <nav class="bg-white border-b p-4 flex justify-between items-center px-8 shadow-sm">
-        <div class="text-2xl font-black text-blue-600">ESCOLAPRO</div>
-        <a href="admin.html" class="text-blue-600 font-bold text-sm border border-blue-600 px-4 py-2 rounded-full">Painel Admin</a>
+        <div class="text-2xl font-black text-blue-600 tracking-tighter">ESCOLAPRO</div>
+        <a href="admin.html" class="text-blue-600 font-bold text-sm border border-blue-600 px-4 py-2 rounded-full hover:bg-blue-50 transition">Painel Admin</a>
     </nav>
 
     <main class="p-8 max-w-7xl mx-auto">
@@ -48,57 +49,65 @@
     <div id="modalIngresso" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-[2.5rem] p-10 max-w-lg w-full shadow-2xl overflow-y-auto max-h-[90vh]">
             <h3 id="nomeEventoModal" class="text-3xl font-black mb-2 tracking-tighter">Evento</h3>
-            <p class="text-gray-500 mb-6 text-sm">Os ingressos serão enviados por e-mail.</p>
+            <p class="text-gray-500 mb-6 text-sm">Preencha os dados para receber os QR Codes por e-mail.</p>
             
             <div class="space-y-4">
-                <input type="text" id="pai" placeholder="Seu Nome Completo" class="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-2xl outline-none transition">
-                <input type="email" id="emailPai" placeholder="E-mail para receber os ingressos" class="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-2xl outline-none transition">
+                <input type="text" id="pai" placeholder="Seu Nome Completo" class="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-2xl outline-none">
+                <input type="email" id="emailPai" placeholder="Seu E-mail" class="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-2xl outline-none">
                 
                 <div id="containerFilhos" class="space-y-4 pt-4 border-t">
                     <div class="p-5 bg-blue-50 rounded-3xl border border-blue-100">
-                        <label class="text-[10px] font-black text-blue-500 uppercase tracking-widest">Aluno 1</label>
+                        <label class="text-[10px] font-black text-blue-500 uppercase">Aluno 1</label>
                         <input type="text" placeholder="Nome do Aluno" class="nome-aluno w-full bg-transparent outline-none mt-2 font-bold">
                         <input type="number" placeholder="Nº Matrícula" class="mat-aluno w-full bg-transparent outline-none border-t border-blue-200 mt-2 pt-2 text-sm">
                     </div>
                 </div>
 
-                <button onclick="adicionarFilho()" class="text-blue-600 font-bold text-xs w-full py-2 hover:bg-blue-50 rounded-xl transition uppercase tracking-widest">+ Adicionar outro aluno</button>
+                <button onclick="adicionarFilho()" class="text-blue-600 font-bold text-xs w-full py-2 hover:bg-blue-50 rounded-xl transition uppercase">+ Adicionar outro aluno</button>
                 
-                <button onclick="processarGeracao()" class="w-full bg-blue-600 text-white py-5 rounded-3xl font-bold text-xl shadow-lg hover:bg-blue-700 mt-4 transition-all active:scale-95">Solicitar Ingressos</button>
+                <button onclick="processarGeracao()" class="w-full bg-blue-600 text-white py-5 rounded-3xl font-bold text-xl shadow-lg hover:bg-blue-700 mt-4 transition-all">Solicitar Ingressos</button>
                 <button onclick="fecharModal()" class="w-full text-gray-400 font-bold py-2">Cancelar</button>
             </div>
         </div>
     </div>
 
     <script>
-        // CONFIGURAÇÕES
+        // CONFIGURAÇÕES FIREBASE (Corrigidas e Limpas)
         const firebaseConfig = {
             apiKey: "AIzaSyA-F2p-sNG9ED7rpZ8uZ5_OxyiggdOfvfc",
-  authDomain: "ingressoscdc.firebaseapp.com",
- URL do banco de dados: "https://ingressoscdc-default-rtdb.firebaseio.com",
-  projectId: "ingressoscdc",
-  storageBucket: "ingressoscdc.firebasestorage.app",
- mensagemSenderId: "388023812522",
-  appId: "1:388023812522:web:1756fb37294146c0e5ebd3"}; Inicialize Firebase const app = initializeApp(firebaseConfig
+            authDomain: "ingressoscdc.firebaseapp.com",
+            databaseURL: "https://ingressoscdc-default-rtdb.firebaseio.com",
+            projectId: "ingressoscdc",
+            storageBucket: "ingressoscdc.firebasestorage.app",
+            messagingSenderId: "388023812522",
+            appId: "1:388023812522:web:1756fb37294146c0e5ebd3"
         };
+
+        // Inicialização
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        emailjs.init("RmJx_2rhtntD90vsH"); // <--- COLOQUE SUA PUBLIC KEY AQUI
+        emailjs.init("RmJx_2rhtntD90vsH");
 
-        // FUNÇÕES DE INTERFACE
-        function abrirModal(n) { document.getElementById('nomeEventoModal').innerText = n; document.getElementById('modalIngresso').classList.remove('hidden'); }
-        function fecharModal() { document.getElementById('modalIngresso').classList.add('hidden'); }
+        function abrirModal(n) { 
+            document.getElementById('nomeEventoModal').innerText = n; 
+            document.getElementById('modalIngresso').classList.remove('hidden'); 
+        }
+
+        function fecharModal() { 
+            document.getElementById('modalIngresso').classList.add('hidden'); 
+        }
+
         function adicionarFilho() {
             const c = document.getElementById('containerFilhos');
             const div = document.createElement('div');
-            div.className = "p-5 bg-blue-50 rounded-3xl border border-blue-100 mt-4 animate-in fade-in zoom-in duration-300";
-            div.innerHTML = `<label class="text-[10px] font-black text-blue-500 uppercase">Aluno ${c.children.length + 1}</label>
-                             <input type="text" placeholder="Nome do Aluno" class="nome-aluno w-full bg-transparent outline-none mt-2 font-bold">
-                             <input type="number" placeholder="Nº Matrícula" class="mat-aluno w-full bg-transparent outline-none border-t border-blue-200 mt-2 pt-2 text-sm">`;
+            div.className = "p-5 bg-blue-50 rounded-3xl border border-blue-100 mt-4";
+            div.innerHTML = `
+                <label class="text-[10px] font-black text-blue-500 uppercase">Aluno ${c.children.length + 1}</label>
+                <input type="text" placeholder="Nome do Aluno" class="nome-aluno w-full bg-transparent outline-none mt-2 font-bold">
+                <input type="number" placeholder="Nº Matrícula" class="mat-aluno w-full bg-transparent outline-none border-t border-blue-200 mt-2 pt-2 text-sm">`;
             c.appendChild(div);
         }
 
-        // LÓGICA PRINCIPAL
         async function processarGeracao() {
             const pai = document.getElementById('pai').value;
             const email = document.getElementById('emailPai').value;
@@ -107,7 +116,6 @@
 
             if(!pai || !email) return alert("Por favor, preencha o seu nome e e-mail.");
 
-            // Mostrar Loading
             document.getElementById('modalIngresso').classList.add('hidden');
             document.getElementById('overlay').classList.remove('hidden');
 
@@ -119,20 +127,17 @@
                     const m = mats[i].value;
                     if(!n || !m) continue;
 
-                    // Verifica Firebase
                     const snap = await db.ref('ingressos/' + m).once('value');
                     if(snap.val() && snap.val().qtd >= 3) {
-                        throw new Error(`O aluno ${n} (${m}) já utilizou a cota de ingressos.`);
+                        throw new Error(`O aluno ${n} (${m}) já utilizou a cota.`);
                     }
 
-                    // Salva Registro
                     await db.ref('ingressos/' + m).set({
                         aluno: n, responsavel: pai, email: email, qtd: 3, data: new Date().toLocaleString()
                     });
 
-                    // Monta HTML para o E-mail
                     htmlIngressos += `<div style="border: 2px solid #2563eb; padding: 15px; border-radius: 15px; margin-bottom: 20px;">
-                        <h4 style="color:#2563eb; margin:0 0 10px 0;">ALUNO: ${n.toUpperCase()}</h4>`;
+                        <h4 style="color:#2563eb;">ALUNO: ${n.toUpperCase()}</h4>`;
                     
                     for(let j=1; j<=3; j++) {
                         const id = `TKT-${m}-${j}`;
@@ -146,14 +151,12 @@
                     htmlIngressos += `</div>`;
                 }
 
-                // Disparo EmailJS
                 await emailjs.send("service_99hr5od", "template_4yvqw5g", {
                     nome_responsavel: pai,
                     to_email: email,
                     detalhes_ingressos: htmlIngressos
                 });
 
-                // Sucesso
                 mostrarSucesso();
 
             } catch (err) {
@@ -167,10 +170,7 @@
             document.getElementById('successCheck').classList.remove('hidden');
             document.getElementById('statusMsg').innerText = "Tudo Pronto!";
             document.getElementById('subStatusMsg').innerText = "Verifique sua caixa de entrada em instantes.";
-            
-            setTimeout(() => {
-                location.reload();
-            }, 5000);
+            setTimeout(() => { location.reload(); }, 5000);
         }
     </script>
 </body>
