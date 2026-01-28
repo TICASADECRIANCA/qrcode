@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Controle de Acesso</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex min-h-screen">
+
+    <aside class="w-64 bg-gray-900 text-white p-6 hidden md:block">
+        <h2 class="text-xl font-black mb-10 text-blue-400">ADMIN CONTROL</h2>
+        <nav class="space-y-4">
+            <a href="#" class="block p-3 bg-blue-600 rounded-xl font-bold">Dashboard</a>
+            <a href="#" class="block p-3 text-gray-400 hover:bg-gray-800 rounded-xl transition">Lista de Alunos</a>
+            <a href="#" class="block p-3 text-gray-400 hover:bg-gray-800 rounded-xl transition">Configurações</a>
+        </nav>
+    </aside>
+
+    <main class="flex-1 p-8">
+        <header class="flex justify-between items-center mb-10">
+            <h1 class="text-3xl font-black text-gray-800">Visão Geral</h1>
+            <button onclick="gerarAvulso()" class="bg-green-600 text-white px-6 py-3 rounded-2xl font-bold shadow-lg hover:bg-green-700">Gerar Ingresso Extra</button>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-200">
+                <p class="text-gray-400 font-bold uppercase text-xs">Total de Ingressos</p>
+                <h3 class="text-4xl font-black mt-2">1.240</h3>
+            </div>
+            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-200">
+                <p class="text-gray-400 font-bold uppercase text-xs">Ingressos Extras</p>
+                <h3 class="text-4xl font-black mt-2 text-orange-500">12</h3>
+            </div>
+            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-200">
+                <p class="text-gray-400 font-bold uppercase text-xs">Capacidade Restante</p>
+                <h3 class="text-4xl font-black mt-2 text-blue-600">760</h3>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-[2rem] shadow-sm border border-gray-200 overflow-hidden">
+            <div class="p-6 border-b font-bold text-gray-700">Logs de Geração Recentes</div>
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-gray-50 text-gray-400 text-xs uppercase font-black">
+                    <tr>
+                        <th class="p-4">Responsável</th>
+                        <th class="p-4">Matrícula</th>
+                        <th class="p-4">Data/Hora</th>
+                        <th class="p-4">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm">
+                    <tr class="border-b hover:bg-gray-50 transition">
+                        <td class="p-4 font-bold">Ricardo Alencar</td>
+                        <td class="p-4 text-gray-500">12345</td>
+                        <td class="p-4 text-gray-400">28/05/2026 - 14:20</td>
+                        <td class="p-4"><span class="bg-green-100 text-green-600 px-3 py-1 rounded-full text-[10px] font-black uppercase">Padrão (3)</span></td>
+                    </tr>
+                    <tr class="border-b hover:bg-gray-50 transition">
+                        <td class="p-4 font-bold">Admin (Avulso)</td>
+                        <td class="p-4 text-gray-500">99900</td>
+                        <td class="p-4 text-gray-400">28/05/2026 - 10:15</td>
+                        <td class="p-4"><span class="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-[10px] font-black uppercase">Extra (+1)</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        function gerarAvulso() {
+            const mat = prompt("Digite a matrícula para o ingresso extra:");
+            if(mat) alert("Ingresso EXTRA gerado com sucesso para a matrícula: " + mat);
+        }
+    </script>
+</body>
+</html>
