@@ -2,92 +2,80 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Gestão de Ingressos</title>
+    <title>Painel Admin - ESCOLAPRO</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 </head>
 <body class="bg-gray-100 p-8">
-    <div class="max-w-6xl mx-auto">
-        <header class="flex justify-between items-center mb-10">
-            <h1 class="text-3xl font-black text-gray-800 tracking-tighter">ADMIN <span class="text-blue-600">PANEL</span></h1>
-            <div class="flex gap-4">
-                <button onclick="location.href='index.html'" class="bg-white border px-6 py-2 rounded-xl font-bold text-sm">Ver Site</button>
-                <button onclick="gerarExtra()" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold text-sm shadow-lg shadow-blue-200">Ingresso Extra</button>
-            </div>
-        </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div class="bg-white p-8 rounded-3xl shadow-sm border border-gray-200">
-                <p class="text-gray-400 text-xs font-bold uppercase">Total Gerado</p>
-                <h2 id="totalGeral" class="text-5xl font-black mt-2">0</h2>
-            </div>
-            <div class="bg-white p-8 rounded-3xl shadow-sm border border-gray-200">
-                <p class="text-gray-400 text-xs font-bold uppercase">Famílias Atendidas</p>
-                <h2 id="totalFamilias" class="text-5xl font-black mt-2 text-blue-600">0</h2>
-            </div>
-        </div>
+    <div id="login" class="max-w-md mx-auto bg-white p-10 rounded-[2.5rem] shadow-2xl mt-20 text-center">
+        <h2 class="text-2xl font-black mb-6">Ver Lista de Inscritos</h2>
+        <input type="password" id="pw" placeholder="Senha Admin" class="w-full p-4 bg-gray-50 rounded-2xl mb-4 outline-none focus:ring-2 ring-blue-500">
+        <button onclick="check()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold uppercase shadow-lg">Entrar</button>
+    </div>
 
-        <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
+    <div id="painel" class="hidden">
+        <div class="max-w-6xl mx-auto bg-white p-10 rounded-[2.5rem] shadow-xl">
+            <div class="flex justify-between items-center mb-8">
+                <h1 class="text-3xl font-black tracking-tighter uppercase italic">Lista de Alunos</h1>
+                <a href="index.html" class="text-gray-400 font-bold">Voltar ao Início</a>
+            </div>
+            
             <table class="w-full text-left">
-                <thead class="bg-gray-50 border-b">
-                    <tr>
-                        <th class="p-5 text-xs font-bold text-gray-400 uppercase">Responsável</th>
-                        <th class="p-5 text-xs font-bold text-gray-400 uppercase">Aluno (Matrícula)</th>
-                        <th class="p-5 text-xs font-bold text-gray-400 uppercase">Data</th>
-                        <th class="p-5 text-xs font-bold text-gray-400 uppercase">Ações</th>
+                <thead>
+                    <tr class="text-gray-400 text-xs uppercase border-b">
+                        <th class="py-4">Matrícula</th>
+                        <th>Aluno</th>
+                        <th>Responsável</th>
+                        <th>Evento</th>
+                        <th>Ações</th>
                     </tr>
                 </thead>
-                <tbody id="listaAdmin"></tbody>
+                <tbody id="corpoTabela" class="text-sm font-bold">
+                    </tbody>
             </table>
         </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <script>
         const firebaseConfig = {
-            apiKey: "AIzaSyBN-Dc3Tkv1-MAP4p-r5rDwlK1z41HsOq8",
-            authDomain: "qrcode-752fb.firebaseapp.com",
-            databaseURL: "https://qrcode-752fb-default-rtdb.firebaseio.com",
-            projectId: "qrcode-752fb",
-            storageBucket: "qrcode-752fb.firebasestorage.app",
-            messagingSenderId: "503167640794",
-            appId: "1:503167640794:web:fdc313be001df6b5bdb1e3"
+            apiKey: "AIzaSyA-F2p-sNG9ED7rpZ8uZ5_OxyiggdOfvfc",
+            authDomain: "ingressoscdc.firebaseapp.com",
+            databaseURL: "https://ingressoscdc-default-rtdb.firebaseio.com",
+            projectId: "ingressoscdc",
+            storageBucket: "ingressoscdc.firebasestorage.app",
+            messagingSenderId: "388023812522",
+            appId: "1:388023812522:web:1756fb37294146c0e5ebd3"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        db.ref('ingressos').on('value', (snap) => {
-            const lista = document.getElementById('listaAdmin');
-            const totalGeral = document.getElementById('totalGeral');
-            const totalFamilias = document.getElementById('totalFamilias');
-            lista.innerHTML = '';
-            let contadorIngressos = 0;
-            let contadorFamilias = 0;
-
-            snap.forEach((child) => {
-                const data = child.val();
-                contadorIngressos += (data.qtd || 0);
-                contadorFamilias++;
-                lista.innerHTML += `
-                    <tr class="border-b hover:bg-gray-50 transition">
-                        <td class="p-5 font-bold">${data.responsavel}</td>
-                        <td class="p-5">${data.aluno} (${child.key})</td>
-                        <td class="p-5 text-gray-400 text-sm">${data.data}</td>
-                        <td class="p-5"><button onclick="remover('${child.key}')" class="text-red-500 font-bold text-xs uppercase">Limpar Cota</button></td>
-                    </tr>`;
-            });
-            totalGeral.innerText = contadorIngressos;
-            totalFamilias.innerText = contadorFamilias;
-        });
-
-        function remover(m) { if(confirm("Deseja resetar a cota desta matrícula?")) db.ref('ingressos/' + m).remove(); }
-        
-        async function gerarExtra() {
-            const m = prompt("Digite a matrícula para o ingresso extra:");
-            const n = prompt("Nome do aluno:");
-            if(m && n) await db.ref('ingressos/' + m).set({ aluno: n, responsavel: "ADMIN", qtd: 1, data: new Date().toLocaleString(), tipo: "EXTRA" });
+        function check() {
+            if(document.getElementById('pw').value === "1992") {
+                document.getElementById('login').classList.add('hidden');
+                document.getElementById('painel').classList.remove('hidden');
+                list();
+            } else { alert("Senha incorreta"); }
         }
+
+        function list() {
+            db.ref('ingressos').on('value', snap => {
+                const t = document.getElementById('corpoTabela');
+                t.innerHTML = "";
+                snap.forEach(item => {
+                    const i = item.val();
+                    t.innerHTML += `<tr class="border-b">
+                        <td class="py-4">${item.key}</td>
+                        <td>${i.aluno}</td>
+                        <td>${i.responsavel}</td>
+                        <td><span class="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-[10px]">${i.evento}</span></td>
+                        <td><button onclick="del('${item.key}')" class="text-red-500">Excluir</button></td>
+                    </tr>`;
+                });
+            });
+        }
+        function del(id) { if(confirm("Remover aluno?")) db.ref('ingressos/'+id).remove(); }
     </script>
 </body>
 </html>
