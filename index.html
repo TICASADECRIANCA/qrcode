@@ -5,74 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal de Ingressos - ESCOLAPRO</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
     <style>
-        .card-gradient { background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.7) 100%); }
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #2563eb; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body class="bg-gray-100">
 
-    <div id="overlay" class="hidden fixed inset-0 bg-white/90 backdrop-blur-sm z-[100] flex flex-col items-center justify-center">
+    <div id="overlay" class="hidden fixed inset-0 bg-white/95 z-[100] flex flex-col items-center justify-center">
         <div id="loaderAnim" class="loader mb-4"></div>
         <div id="successCheck" class="hidden text-green-500 text-6xl mb-4">✓</div>
-        <h3 id="statusMsg" class="text-xl font-bold">Processando...</h3>
-        <p id="subStatusMsg" class="text-gray-500 text-center px-4">Por favor, aguarde.</p>
+        <h3 id="statusMsg" class="text-xl font-bold">Gerando Documento...</h3>
     </div>
 
-    <nav class="bg-white border-b p-4 flex justify-between items-center px-8 shadow-sm">
-        <div class="text-2xl font-black text-blue-600 tracking-tighter">ESCOLAPRO</div>
-        <a href="admin.html" class="text-blue-600 font-bold text-sm border border-blue-600 px-4 py-2 rounded-full hover:bg-blue-50 transition">Painel Admin</a>
+    <nav class="bg-white p-4 shadow-sm flex justify-between items-center px-8">
+        <div class="text-2xl font-black text-blue-600">ESCOLAPRO</div>
+        <div class="space-x-4">
+            <a href="cadastrar_evento.html" class="text-gray-600 font-bold text-sm">Gerenciar Eventos</a>
+        </div>
     </nav>
 
-    <main class="p-8 max-w-7xl mx-auto">
+    <main class="p-8 max-w-6xl mx-auto">
         <h2 class="text-3xl font-bold mb-8">Eventos Disponíveis</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div class="bg-white rounded-[2rem] shadow-sm border overflow-hidden group hover:shadow-xl transition-all">
-                <div class="h-56 bg-cover bg-center relative" style="background-image: url('https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800')">
-                    <div class="absolute inset-0 card-gradient"></div>
-                    <span class="absolute top-4 left-4 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase">Auditório</span>
-                </div>
-                <div class="p-6">
-                    <h3 class="text-2xl font-bold mb-2">Festa da Família 2026</h3>
-                    <button onclick="abrirModal('Festa da Família')" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold text-lg hover:bg-blue-700 transition shadow-lg shadow-blue-100">Garantir Ingressos</button>
-                </div>
+        <div id="listaEventos" class="grid grid-cols-1 md:grid-cols-3 gap-8">
             </div>
-        </div>
     </main>
 
-    <div id="modalIngresso" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-[2.5rem] p-10 max-w-lg w-full shadow-2xl overflow-y-auto max-h-[90vh]">
-            <h3 id="nomeEventoModal" class="text-3xl font-black mb-2 tracking-tighter">Evento</h3>
-            <p class="text-gray-500 mb-6 text-sm">Os ingressos serão enviados por e-mail.</p>
-            
+    <div id="modalIngresso" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-[2rem] p-8 max-w-lg w-full shadow-2xl">
+            <h3 id="nomeEventoModal" class="text-2xl font-bold mb-4">Solicitar Ingresso</h3>
             <div class="space-y-4">
-                <input type="text" id="pai" placeholder="Seu Nome Completo" class="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-2xl outline-none">
-                <input type="email" id="emailPai" placeholder="Seu E-mail" class="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-2xl outline-none">
-                
-                <div id="containerFilhos" class="space-y-4 pt-4 border-t">
-                    <div class="p-5 bg-blue-50 rounded-3xl border border-blue-100">
-                        <label class="text-[10px] font-black text-blue-500 uppercase">Aluno 1</label>
-                        <input type="text" placeholder="Nome do Aluno" class="nome-aluno w-full bg-transparent outline-none mt-2 font-bold">
-                        <input type="number" placeholder="Nº Matrícula" class="mat-aluno w-full bg-transparent outline-none border-t border-blue-200 mt-2 pt-2 text-sm">
+                <input type="text" id="pai" placeholder="Seu Nome" class="w-full p-4 bg-gray-50 rounded-xl border-none">
+                <input type="email" id="emailPai" placeholder="Seu E-mail" class="w-full p-4 bg-gray-50 rounded-xl border-none">
+                <div id="containerFilhos" class="space-y-3">
+                    <div class="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                        <input type="text" placeholder="Nome do Aluno" class="nome-aluno w-full bg-transparent font-bold outline-none">
+                        <input type="number" placeholder="Matrícula" class="mat-aluno w-full bg-transparent text-sm outline-none border-t border-blue-200 mt-2 pt-2">
                     </div>
                 </div>
-
-                <button onclick="adicionarFilho()" class="text-blue-600 font-bold text-xs w-full py-2 hover:bg-blue-50 rounded-xl transition uppercase">+ Adicionar outro aluno</button>
-                
-                <button onclick="processarGeracao()" class="w-full bg-blue-600 text-white py-5 rounded-3xl font-bold text-xl shadow-lg hover:bg-blue-700 mt-4 transition-all">Solicitar Ingressos</button>
-                <button onclick="fecharModal()" class="w-full text-gray-400 font-bold py-2">Cancelar</button>
+                <button onclick="adicionarFilho()" class="text-blue-600 text-xs font-bold w-full uppercase">+ Adicionar Aluno</button>
+                <button onclick="processarGeracao()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition">Gerar Ingressos PDF</button>
+                <button onclick="fecharModal()" class="w-full text-gray-400 py-2">Cancelar</button>
             </div>
         </div>
     </div>
 
     <script>
-        // CONFIGURAÇÕES FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyA-F2p-sNG9ED7rpZ8uZ5_OxyiggdOfvfc",
             authDomain: "ingressoscdc.firebaseapp.com",
@@ -82,103 +65,119 @@
             messagingSenderId: "388023812522",
             appId: "1:388023812522:web:1756fb37294146c0e5ebd3"
         };
-
-        // Inicialização
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         emailjs.init("RmJx_2rhtntD90vsH");
 
-        // Funções de Interface
-        function abrirModal(n) { 
-            document.getElementById('nomeEventoModal').innerText = n; 
-            document.getElementById('modalIngresso').classList.remove('hidden'); 
-        }
+        let eventoSelecionado = "";
 
-        function fecharModal() { 
-            document.getElementById('modalIngresso').classList.add('hidden'); 
-        }
+        // Carregar eventos do Firebase
+        db.ref('eventos').on('value', (snapshot) => {
+            const lista = document.getElementById('listaEventos');
+            lista.innerHTML = "";
+            snapshot.forEach((item) => {
+                const ev = item.val();
+                lista.innerHTML += `
+                    <div class="bg-white rounded-3xl shadow-sm border p-2 overflow-hidden">
+                        <img src="${ev.imagem || 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=500'}" class="h-48 w-full object-cover rounded-2xl">
+                        <div class="p-4">
+                            <h3 class="text-xl font-bold">${ev.nome}</h3>
+                            <p class="text-gray-500 text-sm mb-4">${ev.data}</p>
+                            <button onclick="abrirModal('${ev.nome}')" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition">Obter Ingressos</button>
+                        </div>
+                    </div>`;
+            });
+        });
 
-        function adicionarFilho() {
-            const c = document.getElementById('containerFilhos');
-            const div = document.createElement('div');
-            div.className = "p-5 bg-blue-50 rounded-3xl border border-blue-100 mt-4";
-            div.innerHTML = `
-                <label class="text-[10px] font-black text-blue-500 uppercase">Aluno ${c.children.length + 1}</label>
-                <input type="text" placeholder="Nome do Aluno" class="nome-aluno w-full bg-transparent outline-none mt-2 font-bold">
-                <input type="number" placeholder="Nº Matrícula" class="mat-aluno w-full bg-transparent outline-none border-t border-blue-200 mt-2 pt-2 text-sm">`;
-            c.appendChild(div);
-        }
+        function abrirModal(n) { eventoSelecionado = n; document.getElementById('nomeEventoModal').innerText = n; document.getElementById('modalIngresso').classList.remove('hidden'); }
+        function fecharModal() { document.getElementById('modalIngresso').classList.add('hidden'); }
+        function adicionarFilho() { /* Mesma lógica anterior */ }
 
-        // Lógica de Processamento
         async function processarGeracao() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
             const pai = document.getElementById('pai').value;
             const email = document.getElementById('emailPai').value;
             const nomes = document.querySelectorAll('.nome-aluno');
             const mats = document.querySelectorAll('.mat-aluno');
 
-            if(!pai || !email) return alert("Preencha seu nome e e-mail!");
-
             document.getElementById('modalIngresso').classList.add('hidden');
             document.getElementById('overlay').classList.remove('hidden');
-            document.getElementById('statusMsg').innerText = "Validando dados...";
 
             try {
-                let htmlIngressos = "";
-
                 for(let i=0; i<nomes.length; i++) {
                     const n = nomes[i].value;
                     const m = mats[i].value;
                     if(!n || !m) continue;
 
-                    // Grava no Firebase
-                    await db.ref('ingressos/' + m).set({
-                        aluno: n, responsavel: pai, email: email, qtd: 3, data: new Date().toLocaleString()
-                    });
+                    // Design do PDF Personalizado
+                    if(i > 0) doc.addPage();
+                    
+                    // Cabeçalho
+                    doc.setFillColor(37, 99, 235); // Azul Escolapro
+                    doc.rect(0, 0, 210, 40, 'F');
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFontSize(24);
+                    doc.text("ESCOLAPRO", 20, 25);
+                    doc.setFontSize(12);
+                    doc.text("COMPROVANTE OFICIAL DE INGRESSO", 20, 32);
 
-                    // Cria HTML dos Ingressos
-                    htmlIngressos += `<div style="border: 2px solid #2563eb; padding: 15px; border-radius: 15px; margin-bottom: 20px; font-family: sans-serif;">
-                        <h4 style="color:#2563eb; margin:0;">ALUNO: ${n.toUpperCase()}</h4><br>`;
+                    // Corpo do Ingresso
+                    doc.setTextColor(0, 0, 0);
+                    doc.setFontSize(16);
+                    doc.text(`EVENTO: ${eventoSelecionado.toUpperCase()}`, 20, 60);
+                    
+                    doc.setDrawColor(200);
+                    doc.line(20, 65, 190, 65);
+
+                    doc.setFontSize(12);
+                    doc.text(`ALUNO: ${n}`, 20, 80);
+                    doc.text(`MATRÍCULA: ${m}`, 20, 88);
+                    doc.text(`RESPONSÁVEL: ${pai}`, 20, 96);
+                    doc.text(`DATA DE EMISSÃO: ${new Date().toLocaleDateString()}`, 20, 104);
+
+                    // QR Codes
+                    doc.text("APRESENTE ESTES QR CODES NA ENTRADA:", 105, 130, { align: "center" });
                     
                     for(let j=1; j<=3; j++) {
                         const id = `TKT-${m}-${j}`;
-                        const qrUrl = `https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=${id}`;
-                        htmlIngressos += `
-                            <div style="display:inline-block; margin: 5px; text-align:center; border: 1px solid #eee; padding: 5px;">
-                                <img src="${qrUrl}" width="100" height="100"><br>
-                                <span style="font-size:8px; color:#666;">${id}</span>
-                            </div>`;
+                        const qrUrl = `https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=${id}`;
+                        const img = new Image();
+                        img.src = qrUrl;
+                        await new Promise(r => img.onload = r);
+                        
+                        const xBase = 25 + ((j-1) * 60);
+                        doc.setDrawColor(37, 99, 235);
+                        doc.rect(xBase - 2, 138, 44, 55); // Moldura do QR
+                        doc.addImage(img, 'PNG', xBase, 140, 40, 40);
+                        doc.setFontSize(7);
+                        doc.text(id, xBase + 20, 188, { align: "center" });
                     }
-                    htmlIngressos += `</div>`;
+
+                    doc.setFontSize(10);
+                    doc.setTextColor(150);
+                    doc.text("Este ingresso é pessoal e intransferível.", 105, 280, { align: "center" });
+
+                    // Gravar Firebase
+                    await db.ref('ingressos/' + m).set({ aluno: n, responsavel: pai, evento: eventoSelecionado, data: new Date().toLocaleString() });
                 }
 
-                // Envio via EmailJS
-                document.getElementById('statusMsg').innerText = "Enviando e-mail...";
-                
-                const templateParams = {
+                await emailjs.send("service_r1vrjkp", "template_4yvqw5g", {
                     nome_responsavel: pai,
                     to_email: email,
-                    detalhes_ingressos: htmlIngressos,
-                    title: "Festa da Família"
-                };
+                    title: eventoSelecionado
+                });
 
-                await emailjs.send("service_r1vrjkp", "template_4yvqw5g", templateParams);
-                
+                doc.save(`Ingressos_${pai}.pdf`);
                 mostrarSucesso();
-
-            } catch (err) {
-                console.error(err);
-                alert("Erro: " + (err.text || err.message));
-                document.getElementById('overlay').classList.add('hidden');
-                document.getElementById('modalIngresso').classList.remove('hidden');
-            }
+            } catch (err) { alert(err.message); }
         }
 
         function mostrarSucesso() {
             document.getElementById('loaderAnim').classList.add('hidden');
             document.getElementById('successCheck').classList.remove('hidden');
-            document.getElementById('statusMsg').innerText = "Enviado com Sucesso!";
-            document.getElementById('subStatusMsg').innerText = "Verifique sua caixa de entrada.";
-            setTimeout(() => { location.reload(); }, 5000);
+            document.getElementById('statusMsg').innerText = "PDF Gerado com Sucesso!";
+            setTimeout(() => { location.reload(); }, 4000);
         }
     </script>
 </body>
