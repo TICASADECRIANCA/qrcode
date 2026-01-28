@@ -9,6 +9,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
     <style>
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #2563eb; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -19,15 +21,15 @@
     <div id="overlay" class="hidden fixed inset-0 bg-white/95 z-[100] flex flex-col items-center justify-center">
         <div id="loaderIcon" class="loader mb-4"></div>
         <div id="successCheck" class="hidden text-green-500 text-6xl mb-4">✓</div>
-        <h3 id="statusMsg" class="text-xl font-bold text-center">Processando...</h3>
-        <p id="subStatusMsg" class="text-gray-500 text-center px-4 mt-2">Aguarde a geração do arquivo.</p>
+        <h3 id="statusMsg" class="text-xl font-bold">Processando Ingressos...</h3>
+        <p id="subStatusMsg" class="text-gray-500 text-center px-4 mt-2">Criando QR Codes em alta definição.</p>
     </div>
 
     <nav class="bg-white p-4 shadow-sm flex justify-between items-center px-8 border-b">
         <div class="text-2xl font-black text-blue-600 tracking-tighter">ESCOLAPRO</div>
         <div class="flex gap-2">
-            <a href="admin.html" class="bg-gray-100 text-gray-600 px-4 py-2 rounded-xl text-xs font-bold uppercase">Lista</a>
-            <a href="cadastrar_evento.html" class="bg-blue-100 text-blue-600 px-4 py-2 rounded-xl text-xs font-bold uppercase">⚙️ Eventos</a>
+            <a href="admin.html" class="bg-gray-100 text-gray-600 px-4 py-2 rounded-xl text-xs font-bold uppercase hover:bg-blue-600 hover:text-white transition">Lista</a>
+            <a href="cadastrar_evento.html" class="bg-blue-100 text-blue-600 px-4 py-2 rounded-xl text-xs font-bold uppercase hover:bg-blue-600 hover:text-white transition">⚙️ Eventos</a>
         </div>
     </nav>
 
@@ -38,10 +40,10 @@
 
     <div id="modalIngresso" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-[2.5rem] p-8 max-w-lg w-full shadow-2xl overflow-y-auto max-h-[90vh]">
-            <h3 id="nomeEventoModal" class="text-2xl font-black mb-4">Evento</h3>
+            <h3 id="nomeEventoModal" class="text-2xl font-black mb-4">Solicitar Ingresso</h3>
             <div class="space-y-4">
-                <input type="text" id="pai" placeholder="Nome do Responsável" class="w-full p-4 bg-gray-50 rounded-2xl outline-none border-2 border-transparent focus:border-blue-500">
-                <input type="email" id="emailPai" placeholder="E-mail" class="w-full p-4 bg-gray-50 rounded-2xl outline-none border-2 border-transparent focus:border-blue-500">
+                <input type="text" id="pai" placeholder="Nome do Responsável" class="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 ring-blue-500">
+                <input type="email" id="emailPai" placeholder="Seu E-mail" class="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 ring-blue-500">
                 <div id="containerFilhos" class="space-y-4 pt-4 border-t">
                     <div class="p-4 bg-blue-50 rounded-2xl border border-blue-100">
                         <input type="text" placeholder="Nome do Aluno" class="nome-aluno w-full bg-transparent font-bold outline-none">
@@ -49,11 +51,13 @@
                     </div>
                 </div>
                 <button onclick="adicionarFilho()" class="text-blue-600 font-bold text-xs w-full py-2 uppercase">+ Adicionar Aluno</button>
-                <button onclick="processarGeracao()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg hover:bg-blue-700 transition-all">Gerar Ingressos</button>
-                <button onclick="fecharModal()" class="w-full text-gray-400 font-bold py-2">Cancelar</button>
+                <button onclick="processarGeracao()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg">Gerar Ingressos</button>
+                <button onclick="fecharModal()" class="w-full text-gray-400 py-2">Cancelar</button>
             </div>
         </div>
     </div>
+
+    <div id="qrcode-temp" style="display:none"></div>
 
     <script>
         const firebaseConfig = {
@@ -81,8 +85,8 @@
                         <div class="h-40 bg-cover bg-center" style="background-image: url('${ev.imagem || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800'}')"></div>
                         <div class="p-6">
                             <h3 class="text-xl font-bold">${ev.nome}</h3>
-                            <p class="text-blue-600 text-sm mb-4">${ev.data}</p>
-                            <button onclick="abrirModal('${ev.nome}')" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">Solicitar</button>
+                            <p class="text-blue-600 font-bold mb-4">${ev.data}</p>
+                            <button onclick="abrirModal('${ev.nome}')" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">Garantir Ingressos</button>
                         </div>
                     </div>`;
             });
@@ -90,6 +94,7 @@
 
         function abrirModal(n) { eventoAtual = n; document.getElementById('nomeEventoModal').innerText = n; document.getElementById('modalIngresso').classList.remove('hidden'); }
         function fecharModal() { document.getElementById('modalIngresso').classList.add('hidden'); }
+        
         function adicionarFilho() {
             const div = document.createElement('div');
             div.className = "p-4 bg-blue-50 rounded-2xl border border-blue-100";
@@ -110,7 +115,6 @@
 
             document.getElementById('modalIngresso').classList.add('hidden');
             document.getElementById('overlay').classList.remove('hidden');
-            document.getElementById('statusMsg').innerText = "Gerando PDF...";
 
             try {
                 for(let i=0; i<nomes.length; i++) {
@@ -127,7 +131,7 @@
                     doc.setFontSize(22);
                     doc.text("ESCOLAPRO", 20, 25);
                     doc.setFontSize(10);
-                    doc.text("INGRESSO DIGITAL VÁLIDO", 20, 32);
+                    doc.text("COMPROVANTE DE INGRESSO DIGITAL", 20, 32);
 
                     doc.setTextColor(0,0,0);
                     doc.setFontSize(16);
@@ -136,46 +140,51 @@
                     doc.text(`ALUNO: ${n}`, 20, 80);
                     doc.text(`MATRÍCULA: ${m}`, 20, 88);
                     doc.text(`RESPONSÁVEL: ${pai}`, 20, 96);
+                    doc.text(`DATA: ${new Date().toLocaleDateString()}`, 20, 104);
 
+                    // Geração dos QR Codes
                     for(let j=1; j<=3; j++) {
                         const id = `TKT-${m}-${j}`;
-                        const qrUrl = `https://chart.googleapis.com/chart?chs=180x180&cht=qr&chl=${id}`;
-                        try {
-                            const img = new Image();
-                            img.src = qrUrl;
-                            img.crossOrigin = "Anonymous";
-                            await new Promise(r => { img.onload = r; img.onerror = r; setTimeout(r, 2000); });
-                            doc.addImage(img, 'PNG', 20 + ((j-1) * 60), 120, 40, 40);
-                            doc.setFontSize(7);
-                            doc.text(id, 20 + ((j-1) * 60) + 20, 165, {align:'center'});
-                        } catch(e) {}
+                        const qrDiv = document.getElementById('qrcode-temp');
+                        qrDiv.innerHTML = ""; // Limpa para o próximo
+                        
+                        // Gera o QR Code fisicamente no navegador
+                        new QRCode(qrDiv, { text: id, width: 256, height: 256, correctLevel: QRCode.CorrectLevel.H });
+                        
+                        // Pequena pausa para garantir que o canvas foi criado
+                        await new Promise(r => setTimeout(r, 150));
+                        
+                        const canvas = qrDiv.querySelector('canvas');
+                        const qrImgData = canvas.toDataURL("image/png");
+
+                        // Adiciona no PDF
+                        doc.addImage(qrImgData, 'PNG', 20 + ((j-1) * 60), 125, 40, 40);
+                        doc.setFontSize(7);
+                        doc.text(id, 20 + ((j-1) * 60) + 20, 170, {align:'center'});
                     }
+
                     await db.ref('ingressos/' + m).set({ aluno: n, responsavel: pai, evento: eventoAtual, data: new Date().toLocaleString() });
                 }
 
-                // Baixa o PDF PRIMEIRO
-                doc.save(`Ingressos_${pai}.pdf`);
+                // Baixa o arquivo
+                doc.save(`Ingressos_${pai.replace(/\s+/g, '_')}.pdf`);
 
-                // Tenta enviar e-mail por trás
-                document.getElementById('statusMsg').innerText = "Enviando Confirmação...";
-                emailjs.send("service_r1vrjkp", "template_4yvqw5g", {
+                // Envia e-mail de confirmação
+                await emailjs.send("service_r1vrjkp", "template_4yvqw5g", {
                     nome_responsavel: pai, to_email: email, title: eventoAtual
-                }).finally(() => {
-                    finalizarTela();
                 });
+
+                document.getElementById('loaderIcon').classList.add('hidden');
+                document.getElementById('successCheck').classList.remove('hidden');
+                document.getElementById('statusMsg').innerText = "Sucesso!";
+                document.getElementById('subStatusMsg').innerText = "O PDF foi baixado com seus QR Codes.";
+                setTimeout(() => location.reload(), 4000);
 
             } catch (err) {
                 console.error(err);
-                finalizarTela();
+                alert("Houve um problema na geração. Tente novamente.");
+                document.getElementById('overlay').classList.add('hidden');
             }
-        }
-
-        function finalizarTela() {
-            document.getElementById('loaderIcon').classList.add('hidden');
-            document.getElementById('successCheck').classList.remove('hidden');
-            document.getElementById('statusMsg').innerText = "Concluído!";
-            document.getElementById('subStatusMsg').innerText = "O PDF foi baixado. Até o evento!";
-            setTimeout(() => location.reload(), 4000);
         }
     </script>
 </body>
