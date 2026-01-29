@@ -21,6 +21,7 @@
     <nav class="bg-slate-900 text-white p-4 px-8 flex justify-between items-center shadow-lg sticky top-0 z-50">
         <div class="font-black italic text-xl">ESCOLAPRO <span class="text-blue-400">ADMIN</span></div>
         <div class="flex gap-3">
+            <a href="validador.html" target="_blank" class="px-4 py-2 bg-green-600 rounded-lg text-xs font-bold hover:bg-green-500 transition border border-green-400">📲 Abrir Validador</a>
             <a href="index.html" target="_blank" class="px-4 py-2 bg-blue-600 rounded-lg text-xs font-bold hover:bg-blue-500 transition">👀 Ver Página do Aluno</a>
         </div>
     </nav>
@@ -120,6 +121,7 @@
                                 <th class="p-4 bg-gray-50">Aluno</th>
                                 <th class="p-4 bg-gray-50">Evento</th>
                                 <th class="p-4 bg-gray-50">Tipo</th>
+                                <th class="p-4 bg-gray-50 text-center">Status</th>
                                 <th class="p-4 bg-gray-50 text-right">Ações</th>
                             </tr>
                         </thead>
@@ -160,13 +162,12 @@
                 
                 db.ref('ingressos').on('value', snapIngressos => {
                     todosIngressos = [];
-                    contagemAvulsosPorEvento = {}; // Zera contagem
+                    contagemAvulsosPorEvento = {}; 
                     if(snapIngressos.exists()) {
                         snapIngressos.forEach(i => {
                             const ing = { key: i.key, ...i.val() };
                             todosIngressos.push(ing);
                             
-                            // SÓ CONTA SE FOR AVULSO
                             if(ing.tipo === 'Avulso') {
                                 if(!contagemAvulsosPorEvento[ing.evento]) contagemAvulsosPorEvento[ing.evento] = 0;
                                 contagemAvulsosPorEvento[ing.evento]++;
@@ -218,10 +219,8 @@
                     else if(porcentagem > 90) corBarra = 'bg-red-600';
                 }
 
-                // MOSTRA O LIMITE DE INGRESSOS POR ALUNO
                 const limitIngressos = ev.limit_ingressos || 1;
 
-                // CARD LISTAGEM
                 listaAdm.innerHTML += `
                 <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 relative group flex flex-col justify-between">
                     <div>
@@ -278,7 +277,7 @@
             }
         }
 
-        // --- GERAR AVULSO (TRAVA ESTOQUE) ---
+        // --- GERAR AVULSO ---
         async function gerarAvulso() {
             const evNome = document.getElementById('selEventos').value;
             const al = document.getElementById('avAluno').value;
@@ -292,7 +291,6 @@
             const eventoObj = Object.values(todosEventos).find(e => e.nome === evNome);
             if(!eventoObj) return alert("Evento não encontrado.");
 
-            // CHECAGEM DE ESTOQUE
             const limite = parseInt(eventoObj.estoque) || 0;
             const vendidos = contagemAvulsosPorEvento[evNome] || 0;
             const disponivel = limite - vendidos;
@@ -315,7 +313,7 @@
                     responsavel: rp, 
                     evento: evNome, 
                     utilizado: false, 
-                    tipo: 'Avulso', // Marcador CRUCIAL para o estoque
+                    tipo: 'Avulso',
                     data: new Date().toISOString() 
                 });
             }
@@ -323,7 +321,6 @@
             document.getElementById('avQtdGerar').value = "1"; 
         }
 
-        // --- SALVAR EVENTO (MODIFICADO PARA O LIMITE) ---
         function salvarEvento() {
             const nome = document.getElementById('evNome').value; 
             const data = document.getElementById('evData').value;
@@ -331,7 +328,6 @@
             const img = document.getElementById('evImg').value;
             const bgPdf = document.getElementById('evBg').value; 
             const zap = document.getElementById('evZap').value;
-            // AQUI PEGAMOS O VALOR DE INGRESSOS POR PESSOA
             const qtdPorAluno = document.getElementById('evQtd').value;
 
             if(!nome || !data) return alert("Preencha Nome e Data!");
@@ -342,7 +338,6 @@
                 imagem: img, 
                 bgPdf, 
                 estoque: parseInt(estoque) || 0, 
-                // AQUI SALVAMOS COMO 'limit_ingressos' PARA A PAGINA DO ALUNO LER
                 limit_ingressos: parseInt(qtdPorAluno) || 1, 
                 contato: zap, 
                 liberado: false 
@@ -350,22 +345,97 @@
             alert("Evento Criado (Bloqueado)!"); location.reload();
         }
 
+        // --- RENDERIZAR TABELA (COM STATUS DE VALIDAÇÃO) ---
         function renderizarTabelaIngressos(lista) {
             const tbody = document.getElementById('tabelaIngressos'); tbody.innerHTML = "";
             let qtd = 0; let avulsos = 0;
-            if(lista.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-gray-400">Nenhum ingresso.</td></tr>`; return; }
+            
+            if(lista.length === 0) { 
+                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-gray-400">Nenhum ingresso.</td></tr>`; 
+                return; 
+            }
+
             lista.slice().reverse().forEach(ing => {
                 qtd++; if(ing.tipo === 'Avulso') avulsos++;
-                const tipoBadge = ing.tipo === 'Avulso' ? '<span class="text-[10px] bg-purple-100 text-purple-700 px-2 py-1 rounded font-bold">AVULSO</span>' : '<span class="text-[10px] bg-gray-100 text-gray-500 px-2 py-1 rounded font-bold">ALUNO</span>';
-                tbody.innerHTML += `<tr class="border-b border-gray-50 hover:bg-slate-50"><td class="p-4"><div class="font-bold text-slate-800">${ing.aluno}</div><div class="text-xs text-slate-400 font-mono">${ing.matricula}</div></td><td class="p-4"><span class="text-xs font-bold uppercase bg-gray-100 text-gray-600 px-2 py-1 rounded-md">${ing.evento}</span></td><td class="p-4">${tipoBadge}</td><td class="p-4 text-right"><button onclick="reimprimir('${ing.key}')" class="mr-2">⬇️</button><button onclick="excluirIngresso('${ing.key}')" class="text-red-400">🗑️</button></td></tr>`;
+                
+                // Badge de Tipo (Aluno vs Avulso)
+                const tipoBadge = ing.tipo === 'Avulso' 
+                    ? '<span class="text-[10px] bg-purple-100 text-purple-700 px-2 py-1 rounded font-bold">AVULSO</span>' 
+                    : '<span class="text-[10px] bg-gray-100 text-gray-500 px-2 py-1 rounded font-bold">ALUNO</span>';
+
+                // --- LÓGICA DO STATUS (VALIDADO VS LIBERADO) ---
+                let statusHtml = "";
+                let rowColor = "border-b border-gray-50 hover:bg-slate-50"; // Cor padrão
+
+                if (ing.status === 'validado') {
+                    rowColor = "border-b border-green-50 bg-green-50/40 hover:bg-green-100/50"; // Linha esverdeada
+                    const hora = ing.horario_validacao 
+                        ? new Date(ing.horario_validacao).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
+                        : '??:??';
+                        
+                    statusHtml = `
+                        <div class="flex flex-col items-center">
+                            <span class="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded border border-green-200 font-bold uppercase tracking-wide">
+                                ✅ Validado
+                            </span>
+                            <span class="text-[10px] text-green-600 font-mono mt-1">${hora}</span>
+                        </div>
+                    `;
+                } else {
+                    statusHtml = `
+                        <div class="flex justify-center">
+                            <span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded border border-blue-100 font-bold uppercase tracking-wide">
+                                🎟️ Liberado
+                            </span>
+                        </div>
+                    `;
+                }
+
+                // Renderiza a linha completa
+                tbody.innerHTML += `
+                    <tr class="${rowColor} transition">
+                        <td class="p-4">
+                            <div class="font-bold text-slate-800">${ing.aluno}</div>
+                            <div class="text-xs text-slate-400 font-mono select-all cursor-pointer" title="Clique para copiar">#${ing.key}</div>
+                        </td>
+                        <td class="p-4">
+                            <span class="text-xs font-bold uppercase bg-gray-100 text-gray-600 px-2 py-1 rounded-md">${ing.evento}</span>
+                        </td>
+                        <td class="p-4">
+                            ${tipoBadge}
+                        </td>
+                        <td class="p-4 text-center">
+                            ${statusHtml}
+                        </td>
+                        <td class="p-4 text-right">
+                            <button onclick="reimprimir('${ing.key}')" class="mr-2 text-slate-400 hover:text-blue-600 transition" title="Baixar Novamente">⬇️</button>
+                            <button onclick="excluirIngresso('${ing.key}')" class="text-slate-400 hover:text-red-500 transition" title="Excluir">🗑️</button>
+                        </td>
+                    </tr>`;
             });
-            document.getElementById('totalGeral').innerText = qtd; document.getElementById('totalAvulsos').innerText = avulsos;
+            document.getElementById('totalGeral').innerText = qtd; 
+            document.getElementById('totalAvulsos').innerText = avulsos;
         }
+
         function excluirEvento(key) { if(confirm("Deseja excluir este evento?")) db.ref('eventos/'+key).remove(); }
-        function excluirIngresso(key) { if(confirm("Apagar ingresso?")) db.ref('ingressos/'+key).remove(); }
-        function importarAlunos() { try { const lista = JSON.parse(document.getElementById('jsonAlunos').value); let ups = {}; lista.forEach(a => { if(a.matricula) ups['/alunos_db/'+a.matricula] = { nome: a.nome, turma: a.turma||"" }; }); db.ref().update(ups).then(()=>alert("Importado!")); } catch(e){ alert("JSON Inválido"); } }
+        
+        function excluirIngresso(key) { 
+            if(confirm("Apagar ingresso? Isso invalidará o QR Code.")) db.ref('ingressos/'+key).remove(); 
+        }
+        
+        function importarAlunos() { 
+            try { 
+                const lista = JSON.parse(document.getElementById('jsonAlunos').value); 
+                let ups = {}; 
+                lista.forEach(a => { if(a.matricula) ups['/alunos_db/'+a.matricula] = { nome: a.nome, turma: a.turma||"" }; }); 
+                db.ref().update(ups).then(()=>alert("Importado!")); 
+            } catch(e){ alert("JSON Inválido"); } 
+        }
+        
         async function buscarAlunoAvulso(mat) { if(!mat) return; const s = await db.ref('alunos_db/'+mat).once('value'); if(s.exists()) document.getElementById('avAluno').value = s.val().nome; }
+        
         function filtrarTabela() { const v = document.getElementById('busca').value.toLowerCase(); document.querySelectorAll('#tabelaIngressos tr').forEach(r => r.style.display = r.innerText.toLowerCase().includes(v) ? '' : 'none'); }
+        
         async function reimprimir(key) { 
             const t = todosIngressos.find(i => i.key === key);
             const evInfo = Object.values(todosEventos).find(e => e.nome === t.evento);
@@ -377,7 +447,12 @@
             let fs = 16; x.font = `900 ${fs}px sans-serif`; x.fillStyle = '#000000'; const nomeUp = t.aluno.toUpperCase();
             while (x.measureText(nomeUp).width > 170 && fs > 8) { fs--; x.font = `900 ${fs}px sans-serif`; }
             x.fillText(nomeUp,100,180); x.font='10px monospace'; x.fillStyle='#64748b'; x.fillText(key,100,200);
-            const q = document.createElement('div'); new QRCode(q, {text:key, width:80, height:80}); await new Promise(r=>setTimeout(r,100));
+            const q = document.createElement('div'); 
+            
+            // COR DO QR CODE PARA PRETO NO REIMPRIMIR TAMBÉM
+            new QRCode(q, {text:key, width:80, height:80, colorDark: "#000000"}); 
+            
+            await new Promise(r=>setTimeout(r,100));
             if(q.querySelector('canvas')) x.drawImage(q.querySelector('canvas'), 60, 210);
             const link = document.createElement('a'); link.href=c.toDataURL('image/jpeg', 0.8); link.download=`Ingresso-${t.aluno}.jpg`; link.click();
         }
