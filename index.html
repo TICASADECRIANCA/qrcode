@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal de Ingressos - ESCOLAPRO</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -18,48 +16,40 @@
     <div id="overlay" class="hidden fixed inset-0 bg-white/95 z-[100] flex flex-col items-center justify-center p-4">
         <div id="loader" class="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-6"></div>
         <div id="successIcon" class="hidden text-6xl mb-4">✅</div>
-        <h3 id="statusMsg" class="text-2xl font-black text-slate-800 text-center">Conectando...</h3>
+        <h3 id="statusMsg" class="text-2xl font-black text-slate-800 text-center">Verificando...</h3>
         <p id="subMsg" class="text-gray-500 mt-2 text-center">Aguarde um momento.</p>
     </div>
 
     <nav class="bg-white p-4 shadow-sm flex flex-wrap justify-between items-center px-4 md:px-8 border-b">
-        <div class="text-2xl font-black text-blue-600 italic">ESCOLAPRO</div>
-        <div class="flex gap-2 mt-2 md:mt-0">
-            <a href="validar.html" class="bg-slate-800 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase hover:bg-black transition">📷 Portaria</a>
-            <a href="cadastrar_evento.html" class="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-xs font-bold uppercase hover:bg-blue-100 transition">⚙️ Admin</a>
-        </div>
+        <div onclick="acessoSecreto()" class="text-2xl font-black text-blue-600 italic cursor-pointer select-none">ESCOLAPRO</div>
     </nav>
 
     <div id="listaEventos" class="p-8 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-7xl mx-auto">
-        <p class="text-gray-500 col-span-3 text-center animate-pulse">Carregando eventos...</p>
+        <p class="text-gray-500 col-span-3 text-center">Carregando eventos...</p>
     </div>
 
     <div id="modalIngresso" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-[2.5rem] p-8 max-w-lg w-full shadow-2xl overflow-y-auto max-h-[90vh]">
             <h3 id="nomeEvTitle" class="text-2xl font-black mb-1 uppercase text-blue-600">Garantir Ingresso</h3>
-            <p class="text-sm text-gray-400 mb-6 font-bold">Preencha os dados com atenção</p>
+            <p class="text-sm text-gray-400 mb-6 font-bold">Digite a matrícula para buscar o aluno.</p>
             
             <div class="space-y-4">
                 <div>
                     <label class="text-xs font-bold ml-4 text-gray-500 uppercase">Responsável</label>
-                    <input type="text" id="pai" placeholder="Nome completo do Pai/Mãe" class="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 ring-blue-500 transition">
+                    <input type="text" id="pai" placeholder="Nome completo do Pai/Mãe" class="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 ring-blue-500">
                 </div>
                 <div>
                     <label class="text-xs font-bold ml-4 text-gray-500 uppercase">E-mail</label>
-                    <input type="email" id="email" placeholder="Para receber confirmação" class="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 ring-blue-500 transition">
+                    <input type="email" id="email" placeholder="Para receber o PDF" class="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 ring-blue-500">
                 </div>
                 
                 <div id="filhos" class="space-y-3 pt-2 border-t border-gray-100">
-                    <div class="p-4 bg-blue-50 rounded-2xl border border-blue-100">
-                        <input type="text" placeholder="Nome do Aluno" class="n-aluno w-full bg-transparent font-bold outline-none text-blue-900 placeholder-blue-300">
-                        <input type="number" placeholder="Matrícula (Ex: 202401)" class="m-aluno w-full bg-transparent border-t border-blue-200 mt-2 pt-2 text-sm outline-none">
                     </div>
-                </div>
 
                 <button onclick="addFilho()" class="text-blue-600 font-bold text-xs w-full py-2 uppercase hover:bg-blue-50 rounded-xl transition">+ Incluir outro aluno</button>
                 
                 <div class="pt-4">
-                    <button onclick="processar()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition transform active:scale-95">BAIXAR PDF AGORA</button>
+                    <button onclick="processar()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition">BAIXAR PDF AGORA</button>
                     <button onclick="location.reload()" class="w-full py-3 text-gray-400 text-xs font-bold uppercase mt-2">Cancelar</button>
                 </div>
             </div>
@@ -69,7 +59,14 @@
     <div id="qrcode-temp" style="display:none"></div>
 
     <script>
-        // --- CONFIGURAÇÃO ATUALIZADA (NOVA) ---
+        // CONFIGURAÇÕES GERAIS
+        let clicks = 0;
+        function acessoSecreto() {
+            clicks++;
+            if (clicks === 5) { if(confirm("Ir para Admin?")) window.location.href = "cadastrar_evento.html"; clicks = 0; }
+            setTimeout(() => { clicks = 0; }, 2000);
+        }
+
         const firebaseConfig = { 
             apiKey: "AIzaSyBFDlEOhuUerWjSfK_mPVxoj5sGbSDhe9k", 
             authDomain: "ingressoscdc-9ce88.firebaseapp.com", 
@@ -79,54 +76,118 @@
             messagingSenderId: "976193676383", 
             appId: "1:976193676383:web:8f141a1bd705f8bc0ae7ea" 
         };
-        
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         emailjs.init("RmJx_2rhtntD90vsH");
 
         let currentEv = null;
 
-        // --- CARREGA EVENTOS ---
-        // Se não aparecer nada, é porque o banco 'ingressoscdc-9ce88' está vazio
-        db.ref('eventos').on('value', snap => {
-            const cont = document.getElementById('listaEventos'); 
-            cont.innerHTML = "";
+        // INICIA COM UM CAMPO DE ALUNO
+        function initModal() {
+            document.getElementById('filhos').innerHTML = "";
+            addFilho();
+        }
+
+        // --- NOVA FUNÇÃO: VERIFICA MATRÍCULA NO BANCO ---
+        async function verificarMatricula(inputMat) {
+            const mat = inputMat.value;
+            // Acha o campo de nome correspondente (está no irmão anterior)
+            const campoNome = inputMat.previousElementSibling; 
             
-            if(!snap.exists()){
-                cont.innerHTML = `<p class="col-span-3 text-center text-gray-400 mt-10">Nenhum evento encontrado no banco novo.<br>Cadastre um evento na página de Admin.</p>`;
-                return;
+            if(mat.length < 3) return; // Só busca se tiver 3+ dígitos
+
+            campoNome.placeholder = "Buscando...";
+            
+            // 1. BUSCA DADOS DO ALUNO
+            const snap = await db.ref('alunos_db/' + mat).once('value');
+            
+            if(snap.exists()) {
+                const dados = snap.val();
+                campoNome.value = dados.nome + (dados.turma ? ` (${dados.turma})` : "");
+                campoNome.readOnly = true; // TRAVA O NOME
+                campoNome.classList.add("bg-green-50", "text-green-800"); // VISUAL DE SUCESSO
+                
+                // 2. VERIFICA SE JÁ PEGOU INGRESSO PRA ESSE EVENTO
+                verificarDuplicidade(mat, inputMat);
+
+            } else {
+                campoNome.value = "";
+                campoNome.placeholder = "Aluno não encontrado! Verifique a matrícula.";
+                campoNome.readOnly = false; // Destrava caso tenha digitado errado
+                campoNome.classList.remove("bg-green-50", "text-green-800");
+                alert("Matrícula não cadastrada no sistema.");
+                inputMat.value = ""; // Limpa a matrícula errada
             }
+        }
+
+        async function verificarDuplicidade(matricula, elementoInput) {
+            // Busca ingressos que tenham essa matrícula
+            const tickets = await db.ref('ingressos').orderByChild('matricula').equalTo(matricula).once('value');
+            
+            let jaPegou = false;
+            if(tickets.exists()) {
+                tickets.forEach(t => {
+                    if(t.val().evento === currentEv.nome) {
+                        jaPegou = true;
+                    }
+                });
+            }
+
+            if(jaPegou) {
+                alert(`ATENÇÃO: A matrícula ${matricula} JÁ POSSUI ingresso para este evento!`);
+                elementoInput.value = ""; // Limpa matrícula
+                elementoInput.previousElementSibling.value = ""; // Limpa nome
+            }
+        }
+
+        function addFilho() {
+            const div = document.createElement('div');
+            div.className = "p-4 bg-blue-50 rounded-2xl border border-blue-100 mt-2 relative";
+            // Note o onchange na matrícula
+            div.innerHTML = `
+                <input type="text" placeholder="Nome do Aluno (Preenchimento Automático)" readonly class="n-aluno w-full bg-transparent font-bold outline-none text-blue-900 placeholder-blue-300 mb-2 cursor-not-allowed">
+                <input type="number" placeholder="Digite a Matrícula e aperte Tab" class="m-aluno w-full bg-white p-2 rounded-lg border border-blue-200 text-sm outline-none font-bold" onchange="verificarMatricula(this)">
+                <p class="text-[10px] text-blue-400 mt-1">Digite a matrícula para buscar o nome.</p>
+            `;
+            document.getElementById('filhos').appendChild(div);
+        }
+
+        // CARREGA EVENTOS
+        db.ref('eventos').on('value', snap => {
+            const cont = document.getElementById('listaEventos'); cont.innerHTML = "";
+            if(!snap.exists()){ cont.innerHTML = `<p class="col-span-3 text-center text-gray-400 mt-10">Nenhum evento.</p>`; return; }
 
             snap.forEach(i => {
                 const ev = i.val();
+                let btnHtml = "";
+                if(ev.contato) {
+                    const msg = `Olá, quero comprar ingressos para *${ev.nome}*.`;
+                    const link = `https://wa.me/${ev.contato}?text=${encodeURIComponent(msg)}`;
+                    btnHtml = `<a href="${link}" target="_blank" class="block text-center w-full bg-green-600 text-white py-4 rounded-2xl font-bold hover:bg-green-700 transition">💲 COMPRAR INGRESSO</a>`;
+                } else {
+                    btnHtml = `<button onclick="openM('${i.key}')" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-black transition">🎟️ GARANTIR INGRESSO</button>`;
+                }
+
                 cont.innerHTML += `
                 <div class="bg-white rounded-[2.5rem] p-4 shadow-sm hover:shadow-xl transition duration-300 border border-gray-100">
-                    <div class="h-48 rounded-[2rem] bg-cover bg-center mb-4" style="background-image: url('${ev.imagem || 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=800'}')"></div>
+                    <div class="h-48 rounded-[2rem] bg-cover bg-center mb-4" style="background-image: url('${ev.imagem || 'https://placehold.co/600x400?text=Evento'}')"></div>
                     <div class="px-2 pb-2">
                         <h3 class="text-xl font-black text-gray-800 leading-tight mb-1">${ev.nome}</h3>
                         <p class="text-xs font-bold text-blue-500 uppercase tracking-wider mb-4">${ev.data}</p>
-                        <button onclick="openM('${i.key}')" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-black transition">Quero Ingressos</button>
+                        ${btnHtml}
                     </div>
                 </div>`;
             });
-        }, error => {
-            console.error(error);
-            alert("Erro ao ler eventos: Verifique as Regras do Firebase.");
         });
 
         async function openM(key) {
             currentEv = (await db.ref('eventos/'+key).once('value')).val();
             document.getElementById('nomeEvTitle').innerText = currentEv.nome;
+            initModal(); // Reseta os campos
             document.getElementById('modalIngresso').classList.remove('hidden');
         }
 
-        function addFilho() {
-            const div = document.createElement('div');
-            div.className = "p-4 bg-blue-50 rounded-2xl border border-blue-100 mt-2";
-            div.innerHTML = `<input type="text" placeholder="Nome do Aluno" class="n-aluno w-full bg-transparent font-bold outline-none text-blue-900 placeholder-blue-300"><input type="number" placeholder="Matrícula" class="m-aluno w-full bg-transparent border-t border-blue-200 mt-2 pt-2 text-sm outline-none">`;
-            document.getElementById('filhos').appendChild(div);
-        }
-
+        // --- PROCESSAMENTO (COM VALIDAÇÃO DUPLA) ---
         async function processar() {
             const pai = document.getElementById('pai').value;
             const mail = document.getElementById('email').value;
@@ -135,100 +196,63 @@
 
             if(!pai || !mail) return alert("Preencha Responsável e E-mail!");
 
+            // Validação final: Checa se todos os nomes foram preenchidos (se matrícula foi válida)
+            for(let k=0; k<nomes.length; k++) {
+                if(nomes[k].value === "" || mats[k].value === "") {
+                    return alert("Verifique as matrículas! Todos os alunos devem ser identificados.");
+                }
+            }
+
+            window.scrollTo(0,0);
             document.getElementById('modalIngresso').classList.add('hidden');
             document.getElementById('overlay').classList.remove('hidden');
-            document.getElementById('statusMsg').innerText = "Iniciando...";
-
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            let alunosList = [];
+            document.getElementById('statusMsg').innerText = "Processando...";
 
             try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                let fundoImg = await carregarImagemSegura(currentEv.bgPdf);
+                let totalIngressos = 0; let alunosList = [];
+
                 for(let i=0; i<nomes.length; i++) {
                     const n = nomes[i].value; const m = mats[i].value;
-                    if(!n || !m) continue;
                     alunosList.push(n);
-
                     const qtd = parseInt(currentEv.qtd) || 1;
 
                     for(let j=1; j <= qtd; j++) {
-                        if(i > 0 || j > 1) doc.addPage();
-
-                        // 1. FUNDO
-                        if(currentEv.bgPdf) {
-                            try {
-                                const img = new Image(); img.src = currentEv.bgPdf; img.crossOrigin = "Anonymous";
-                                await new Promise((resolve) => { 
-                                    img.onload = resolve; 
-                                    img.onerror = resolve; 
-                                    setTimeout(resolve, 2000); // Força continuar após 2s
-                                });
-                                doc.addImage(img, 'JPEG', 0, 0, 210, 297);
-                            } catch(e) { console.log("Erro imagem fundo"); }
-                        }
-
-                        // 2. TEXTOS
+                        totalIngressos++; if(totalIngressos > 1) doc.addPage();
+                        if(fundoImg) { doc.addImage(fundoImg, 'JPEG', 0, 0, 210, 297); doc.setFillColor(255, 255, 255); doc.roundedRect(60, 70, 90, 100, 5, 5, 'F'); }
+                        
                         const idUnico = `${m}-${j}`;
-                        
-                        if(currentEv.bgPdf) {
-                            doc.setFillColor(255, 255, 255);
-                            doc.roundedRect(60, 70, 90, 100, 5, 5, 'F');
-                        }
-
-                        doc.setTextColor(0,0,0);
-                        doc.setFontSize(16);
-                        doc.text(n.toUpperCase(), 105, 85, {align: 'center'});
-                        
-                        doc.setFontSize(10);
-                        doc.text(`INGRESSO ${j} / ${qtd}`, 105, 92, {align: 'center'});
+                        doc.setTextColor(0,0,0); doc.setFontSize(16);
+                        doc.text(n.toUpperCase(), 105, 85, {align: 'center', maxWidth: 80});
+                        doc.setFontSize(10); doc.text(`INGRESSO ${j} / ${qtd}`, 105, 92, {align: 'center'});
                         doc.text(`ID: ${idUnico}`, 105, 97, {align: 'center'});
 
-                        // 3. QR CODE
                         const qrDiv = document.getElementById('qrcode-temp'); qrDiv.innerHTML = "";
                         new QRCode(qrDiv, { text: idUnico, width: 256, height: 256 });
-                        await new Promise(r => setTimeout(r, 200));
-                        const qrImg = qrDiv.querySelector('canvas').toDataURL("image/png");
-                        doc.addImage(qrImg, 'PNG', 75, 110, 60, 60);
+                        await new Promise(r => setTimeout(r, 100));
+                        const qrCanvas = qrDiv.querySelector('canvas');
+                        if(qrCanvas) doc.addImage(qrCanvas.toDataURL("image/png"), 'PNG', 75, 110, 60, 60);
 
-                        // 4. SALVAR NO FIREBASE
-                        document.getElementById('statusMsg').innerText = "Salvando no sistema...";
-                        await db.ref('ingressos/' + idUnico).set({ 
-                            aluno: n, 
-                            matricula: m, 
-                            responsavel: pai, 
-                            evento: currentEv.nome, 
-                            utilizado: false,
-                            dataGeracao: new Date().toISOString()
-                        });
+                        await db.ref('ingressos/' + idUnico).set({ aluno: n, matricula: m, responsavel: pai, evento: currentEv.nome, utilizado: false, data: new Date().toISOString() });
                     }
                 }
 
-                // 5. DOWNLOAD PDF
-                document.getElementById('statusMsg').innerText = "Baixando PDF...";
                 doc.save(`Ingressos_${pai.replace(/ /g,'_')}.pdf`);
+                emailjs.send("service_r1vrjkp", "template_4yvqw5g", { nome_responsavel: pai, to_email: mail, evento: currentEv.nome, message: `Confirmado: ${alunosList.join(", ")}` });
 
-                // 6. ENVIAR EMAIL
-                document.getElementById('statusMsg').innerText = "Enviando E-mail...";
-                await emailjs.send("service_r1vrjkp", "template_4yvqw5g", {
-                    nome_responsavel: pai,
-                    to_email: mail,
-                    evento: currentEv.nome,
-                    message: `Seus ingressos (${alunosList.join(", ")}) foram gerados com sucesso!`
-                });
-
-                document.getElementById('loader').classList.add('hidden');
-                document.getElementById('successIcon').classList.remove('hidden');
-                document.getElementById('statusMsg').innerText = "Sucesso!";
-                document.getElementById('subMsg').innerText = "PDF Baixado.";
-                
-                setTimeout(() => location.reload(), 4000);
+                document.getElementById('loader').classList.add('hidden'); document.getElementById('successIcon').classList.remove('hidden');
+                document.getElementById('statusMsg').innerText = "Sucesso!"; document.getElementById('subMsg').innerText = "Verifique o Download.";
+                setTimeout(() => location.reload(), 3000);
 
             } catch(e) {
-                console.error(e);
-                alert("Erro: " + e.message + "\n\nIMPORTANTE: Verifique se as Regras do Firebase (Rules) estão liberadas.");
-                location.reload();
+                console.error(e); alert("Erro: " + e.message); location.reload();
             }
         }
+
+        function carregarImagemSegura(url) { return new Promise((r) => { if(!url) return r(null); const i = new Image(); i.crossOrigin="anonymous"; i.onload=()=> {const c=document.createElement("canvas");c.width=i.width;c.height=i.height;c.getContext("2d").drawImage(i,0,0);r(c.toDataURL("image/jpeg",0.7))}; i.onerror=()=>r(null); i.src=url; }); }
     </script>
 </body>
 </html>
