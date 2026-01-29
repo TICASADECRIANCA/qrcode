@@ -2,131 +2,44 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Validador de Acesso - ESCOLAPRO</title>
+    <title>Scanner ESCOLAPRO</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
-<body class="bg-slate-900 text-white min-h-screen">
-
-    <div id="loginSection" class="max-w-md mx-auto p-8 pt-20">
-        <div class="bg-white rounded-[2.5rem] p-8 text-slate-900 shadow-2xl">
-            <h2 class="text-2xl font-black mb-6 text-center text-blue-600">Portaria Digital</h2>
-            <input type="password" id="passInput" placeholder="Senha da Portaria" class="w-full p-4 bg-slate-100 rounded-2xl mb-4 outline-none border-2 border-transparent focus:border-blue-500">
-            <button onclick="verificarSenha()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold uppercase shadow-lg">Iniciar Trabalho</button>
-        </div>
-    </div>
-
-    <div id="scannerSection" class="hidden flex flex-col items-center p-4">
-        <header class="w-full max-w-md flex justify-between items-center mb-6 py-4">
-            <h1 class="text-xl font-bold italic">ESCOLAPRO <span class="text-blue-400">CHECK-IN</span></h1>
-            <button onclick="location.reload()" class="text-xs bg-slate-800 px-3 py-1 rounded-full">Sair</button>
-        </header>
-
-        <div class="w-full max-w-md overflow-hidden rounded-[2rem] border-4 border-slate-800 bg-black relative">
-            <div id="reader" class="w-full"></div>
-            <div class="absolute inset-0 border-[40px] border-black/40 pointer-events-none flex items-center justify-center">
-                <div class="w-64 h-64 border-2 border-blue-400 rounded-3xl opacity-50"></div>
-            </div>
-        </div>
-
-        <div id="resultCard" class="hidden w-full max-w-md mt-6 p-6 rounded-[2rem] transition-all duration-300">
-            <div class="flex items-center gap-4">
-                <div id="statusIcon" class="text-4xl"></div>
-                <div>
-                    <h3 id="resAluno" class="text-xl font-black uppercase tracking-tight"></h3>
-                    <p id="resInfo" class="text-sm opacity-80"></p>
-                </div>
-            </div>
-            <button onclick="resetScanner()" class="w-full mt-4 bg-white/20 py-3 rounded-xl font-bold text-sm uppercase">Próximo da Fila</button>
-        </div>
-        
-        <p class="text-slate-500 text-[10px] mt-8 uppercase tracking-widest font-bold">Aponte para o QR Code do Ingresso</p>
-    </div>
+<body class="bg-slate-900 text-white min-h-screen p-4 flex flex-col items-center">
+    <div id="reader" class="w-full max-w-md rounded-3xl overflow-hidden mb-6"></div>
+    <div id="res" class="hidden w-full max-w-md p-6 rounded-3xl text-center font-black text-xl"></div>
+    <button onclick="location.reload()" class="mt-8 opacity-50 text-xs">REINICIAR SCANNER</button>
 
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyA-F2p-sNG9ED7rpZ8uZ5_OxyiggdOfvfc",
-            authDomain: "ingressoscdc.firebaseapp.com",
-            databaseURL: "https://ingressoscdc-default-rtdb.firebaseio.com",
-            projectId: "ingressoscdc",
-            storageBucket: "ingressoscdc.firebasestorage.app",
-            messagingSenderId: "388023812522",
-            appId: "1:388023812522:web:1756fb37294146c0e5ebd3"
-        };
+        const firebaseConfig = { apiKey: "AIzaSyA-F2p-sNG9ED7rpZ8uZ5_OxyiggdOfvfc", authDomain: "ingressoscdc.firebaseapp.com", databaseURL: "https://ingressoscdc-default-rtdb.firebaseio.com", projectId: "ingressoscdc", storageBucket: "ingressoscdc.firebasestorage.app", messagingSenderId: "388023812522", appId: "1:388023812522:web:1756fb37294146c0e5ebd3" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let html5QrCode;
-
-        function verificarSenha() {
-            if(document.getElementById('passInput').value === "123456") {
-                document.getElementById('loginSection').classList.add('hidden');
-                document.getElementById('scannerSection').classList.remove('hidden');
-                startScanner();
-            } else { alert("Senha incorreta"); }
-        }
-
-        function startScanner() {
-            html5QrCode = new Html5Qrcode("reader");
-            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-
-            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess);
-        }
-
-        function onScanSuccess(decodedText) {
-            // Pausa o scanner para mostrar o resultado
-            html5QrCode.pause();
-            
-            // O código é "TKT-MATRICULA-NUM"
-            const partes = decodedText.split('-');
-            if(partes.length < 2) {
-                exibirResultado("ERRO", "Código Inválido", "QR Code fora do padrão ESCOLAPRO", "bg-orange-500");
-                return;
-            }
-
-            const matricula = partes[1];
-            validarNoBanco(matricula, decodedText);
-        }
-
-        function validarNoBanco(mat, codeCompleto) {
-            db.ref('ingressos/' + mat).once('value', (snapshot) => {
-                if (snapshot.exists()) {
-                    const dados = snapshot.val();
-                    
-                    // Verifica se já entrou
-                    if (dados.utilizado) {
-                        exibirResultado("AVISO", dados.aluno, "ESTE INGRESSO JÁ FOI VALIDADO!", "bg-red-600");
+        const scanner = new Html5Qrcode("reader");
+        scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (txt) => {
+            scanner.pause();
+            db.ref('ingressos/' + txt).once('value', snap => {
+                const r = document.getElementById('res'); r.classList.remove('hidden');
+                if(snap.exists()) {
+                    const d = snap.val();
+                    if(d.utilizado) {
+                        r.className = "p-6 rounded-3xl bg-red-600 text-white";
+                        r.innerText = "❌ JÁ UTILIZADO\n" + d.aluno;
                     } else {
-                        exibirResultado("OK", dados.aluno, "ENTRADA LIBERADA! BEM-VINDO.", "bg-green-600");
-                        // Marca como usado
-                        db.ref('ingressos/' + mat).update({ utilizado: true, horaEntrada: new Date().toLocaleTimeString() });
+                        r.className = "p-6 rounded-3xl bg-green-500 text-white";
+                        r.innerText = "✅ LIBERADO\n" + d.aluno;
+                        db.ref('ingressos/' + txt).update({ utilizado: true });
                     }
                 } else {
-                    exibirResultado("ERRO", "NÃO ENCONTRADO", "Este aluno não está na lista oficial.", "bg-slate-700");
+                    r.className = "p-6 rounded-3xl bg-gray-600";
+                    r.innerText = "⚠️ INVÁLIDO";
                 }
             });
-        }
-
-        function exibirResultado(status, aluno, msg, cor) {
-            const card = document.getElementById('resultCard');
-            card.className = `w-full max-w-md mt-6 p-6 rounded-[2rem] transition-all duration-300 ${cor}`;
-            card.classList.remove('hidden');
-            
-            document.getElementById('resAluno').innerText = aluno;
-            document.getElementById('resInfo').innerText = msg;
-            document.getElementById('statusIcon').innerText = status === "OK" ? "✅" : (status === "AVISO" ? "❌" : "⚠️");
-            
-            // Feedback vibratório se disponível
-            if (navigator.vibrate) navigator.vibrate(status === "OK" ? 100 : [100, 50, 100]);
-        }
-
-        function resetScanner() {
-            document.getElementById('resultCard').classList.add('hidden');
-            html5QrCode.resume();
-        }
+            setTimeout(() => { r.classList.add('hidden'); scanner.resume(); }, 4000);
+        });
     </script>
 </body>
 </html>
