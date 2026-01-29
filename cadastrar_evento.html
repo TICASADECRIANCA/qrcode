@@ -12,7 +12,7 @@
 </head>
 <body class="bg-slate-100 font-sans pb-20">
 
-    <nav class="bg-slate-900 text-white p-4 px-8 flex justify-between items-center shadow-lg">
+    <nav class="bg-slate-900 text-white p-4 px-8 flex justify-between items-center shadow-lg sticky top-0 z-50">
         <div class="font-black italic text-xl">ESCOLAPRO <span class="text-blue-400">ADMIN</span></div>
         <div class="flex gap-3">
             <a href="index.html" class="px-4 py-2 bg-slate-700 rounded-lg text-xs font-bold hover:bg-slate-600 transition">🏠 Início</a>
@@ -59,7 +59,6 @@
                     <button onclick="gerarAvulso()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition">Gerar & Baixar</button>
                 </div>
             </div>
-
         </div>
 
         <div class="lg:col-span-2 space-y-6">
@@ -68,12 +67,27 @@
                 <div class="bg-white p-4 rounded-2xl shadow-sm"><p class="text-xs font-bold text-gray-400">Validados</p><h2 id="totalValidados" class="text-3xl font-black text-green-500">0</h2></div>
             </div>
 
-            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 flex flex-col max-h-[800px]"> 
+                <div class="p-6 border-b border-gray-100 flex justify-between items-center shrink-0">
                     <h3 class="font-black text-slate-800 text-lg">Passageiros</h3>
-                    <input type="text" id="busca" onkeyup="filtrarTabela()" placeholder="🔍 Buscar..." class="p-2 bg-gray-50 rounded-lg text-sm border">
+                    <input type="text" id="busca" onkeyup="filtrarTabela()" placeholder="🔍 Buscar..." class="p-2 bg-gray-50 rounded-lg text-sm border focus:ring-2 ring-blue-500 outline-none">
                 </div>
-                <div class="overflow-x-auto"><table class="w-full text-left text-sm text-gray-600"><tbody id="tabelaIngressos"><tr><td class="p-4">Carregando...</td></tr></tbody></table></div>
+                
+                <div class="overflow-y-auto overflow-x-auto flex-1 custom-scrollbar">
+                    <table class="w-full text-left text-sm text-gray-600">
+                        <thead class="bg-gray-50 text-xs uppercase text-gray-400 font-bold sticky top-0">
+                            <tr>
+                                <th class="p-4">Aluno / Matrícula</th>
+                                <th class="p-4">Evento</th>
+                                <th class="p-4">Status</th>
+                                <th class="p-4 text-right">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaIngressos" class="divide-y divide-gray-100">
+                            <tr><td class="p-4">Carregando dados...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -94,70 +108,30 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 1. IMPORTAR ALUNOS
+        // --- FUNÇÕES DE IMPORTAÇÃO E CADASTRO ---
         function importarAlunos() {
             const jsonText = document.getElementById('jsonAlunos').value;
             try {
                 const lista = JSON.parse(jsonText);
                 if(!Array.isArray(lista)) throw new Error("O formato deve ser uma lista []");
-
                 let updates = {};
                 lista.forEach(aluno => {
-                    // A chave será a matrícula para busca rápida
                     if(aluno.matricula && aluno.nome) {
-                        updates['/alunos_db/' + aluno.matricula] = {
-                            nome: aluno.nome,
-                            turma: aluno.turma || ""
-                        };
+                        updates['/alunos_db/' + aluno.matricula] = { nome: aluno.nome, turma: aluno.turma || "" };
                     }
                 });
-
                 db.ref().update(updates)
-                  .then(() => alert(`Sucesso! ${lista.length} alunos importados/atualizados.`))
-                  .catch(e => alert("Erro ao salvar: " + e.message));
-
-            } catch(e) {
-                alert("Erro no formato JSON! Certifique-se que está correto.\n" + e.message);
-            }
+                  .then(() => alert(`Sucesso! ${lista.length} alunos importados.`))
+                  .catch(e => alert("Erro: " + e.message));
+            } catch(e) { alert("Erro no JSON! " + e.message); }
         }
 
-        // 2. BUSCA AUTOMÁTICA NO INGRESSO AVULSO
         async function buscarAlunoAvulso(mat) {
             if(!mat) return;
             const snap = await db.ref('alunos_db/' + mat).once('value');
-            if(snap.exists()) {
-                document.getElementById('avAluno').value = snap.val().nome;
-            } else {
-                alert("Aluno não encontrado no banco de dados.");
-                document.getElementById('avAluno').value = "";
-            }
+            if(snap.exists()) { document.getElementById('avAluno').value = snap.val().nome; } 
+            else { alert("Aluno não encontrado."); document.getElementById('avAluno').value = ""; }
         }
-
-        // --- MANTENDO AS FUNÇÕES ANTIGAS ---
-        let todosEventos = {}; let todosIngressos = [];
-
-        db.ref('eventos').on('value', snap => {
-            const sel = document.getElementById('selEventos'); sel.innerHTML = ""; todosEventos = {};
-            snap.forEach(i => {
-                const ev = i.val(); todosEventos[ev.nome] = ev;
-                const opt = document.createElement('option'); opt.value = ev.nome; opt.text = ev.nome; sel.appendChild(opt);
-            });
-        });
-
-        db.ref('ingressos').on('value', snap => {
-            const tbody = document.getElementById('tabelaIngressos'); tbody.innerHTML = ""; todosIngressos = [];
-            let qtd = 0; let val = 0;
-            if(!snap.exists()) return;
-            const lista = []; snap.forEach(item => lista.push({ key: item.key, ...item.val() }));
-            lista.reverse().forEach(ing => {
-                qtd++; if(ing.utilizado) val++; todosIngressos.push(ing);
-                const status = ing.utilizado ? 'USADO' : 'ATIVO';
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td class="p-4 font-bold">${ing.aluno}<br><span class="text-xs font-normal">Mat: ${ing.matricula}</span></td><td class="p-4 uppercase">${ing.evento}</td><td class="p-4 font-bold text-xs">${status}</td><td class="p-4 text-right"><button onclick="reimprimir('${ing.key}')" class="bg-slate-800 text-white px-2 py-1 rounded text-xs">PDF</button></td>`;
-                tbody.appendChild(tr);
-            });
-            document.getElementById('totalGeral').innerText = qtd; document.getElementById('totalValidados').innerText = val;
-        });
 
         function salvarEvento() {
             const nome = document.getElementById('evNome').value;
@@ -171,39 +145,140 @@
             alert("Evento criado!"); document.getElementById('evNome').value = "";
         }
 
+        // --- CORREÇÃO DA LISTAGEM ---
+        let todosEventos = {}; 
+        let todosIngressos = [];
+
+        db.ref('eventos').on('value', snap => {
+            const sel = document.getElementById('selEventos'); sel.innerHTML = ""; todosEventos = {};
+            snap.forEach(i => {
+                const ev = i.val(); todosEventos[ev.nome] = ev;
+                const opt = document.createElement('option'); opt.value = ev.nome; opt.text = ev.nome; sel.appendChild(opt);
+            });
+        });
+
+        // AQUI ESTAVA O PROBLEMA POTENCIAL
+        db.ref('ingressos').on('value', snap => {
+            const tbody = document.getElementById('tabelaIngressos'); 
+            tbody.innerHTML = ""; 
+            todosIngressos = [];
+            
+            let qtd = 0; 
+            let val = 0;
+            
+            if(!snap.exists()){
+                tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-gray-400">Nenhum ingresso emitido ainda.</td></tr>`;
+                return;
+            }
+
+            const listaTemporaria = [];
+            snap.forEach(item => {
+                // Proteção contra dados ruins
+                if(item.val() && typeof item.val() === 'object') {
+                    listaTemporaria.push({ key: item.key, ...item.val() });
+                }
+            });
+
+            // Ordena e Renderiza
+            listaTemporaria.reverse().forEach(ing => {
+                qtd++; 
+                if(ing.utilizado) val++; 
+                todosIngressos.push(ing);
+
+                const statusClass = ing.utilizado ? 'text-green-600 bg-green-50' : 'text-blue-600 bg-blue-50';
+                const statusText = ing.utilizado ? 'VALIDADO' : 'ATIVO';
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition";
+                tr.innerHTML = `
+                    <td class="p-4">
+                        <div class="font-bold text-slate-800">${ing.aluno || 'Sem Nome'}</div>
+                        <div class="text-xs text-slate-400 font-mono">Mat: ${ing.matricula || '---'}</div>
+                    </td>
+                    <td class="p-4">
+                        <span class="text-xs font-bold uppercase bg-gray-100 text-gray-600 px-2 py-1 rounded-md">${ing.evento || '---'}</span>
+                    </td>
+                    <td class="p-4">
+                        <span class="text-[10px] font-black uppercase px-2 py-1 rounded-full ${statusClass}">${statusText}</span>
+                    </td>
+                    <td class="p-4 text-right">
+                        <button onclick="reimprimir('${ing.key}')" class="bg-slate-800 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-black transition shadow-lg shadow-slate-300">
+                            🖨️ PDF
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('totalGeral').innerText = qtd; 
+            document.getElementById('totalValidados').innerText = val;
+        });
+
+        // --- GERAÇÃO E IMPRESSÃO ---
         async function gerarAvulso() {
             const evNome = document.getElementById('selEventos').value;
             const aluno = document.getElementById('avAluno').value;
             const mat = document.getElementById('avMat').value;
             const resp = document.getElementById('avResp').value || "Escola";
             if(!aluno || !mat) return alert("Preencha dados!");
-            const idUnico = `${mat}-AVULSO-${Date.now().toString().slice(-4)}`;
-            await db.ref('ingressos/' + idUnico).set({ aluno, matricula: mat, responsavel: resp, evento: evNome, utilizado: false, dataGeracao: new Date().toISOString() });
+            
+            // Cria ID único seguro
+            const idUnico = `${mat}-AVULSO-${Date.now().toString().slice(-5)}`;
+            
+            await db.ref('ingressos/' + idUnico).set({ 
+                aluno, matricula: mat, responsavel: resp, evento: evNome, utilizado: false, dataGeracao: new Date().toISOString() 
+            });
+            
+            // Espera gravar e imprime
             reimprimir(idUnico, { key: idUnico, aluno, matricula: mat, evento: evNome });
-            document.getElementById('avMat').value = ""; document.getElementById('avAluno').value = "";
+            
+            // Limpa campos
+            document.getElementById('avMat').value = ""; 
+            document.getElementById('avAluno').value = "";
         }
 
         async function reimprimir(key, dadosDiretos = null) {
             let dados = dadosDiretos || todosIngressos.find(i => i.key === key);
-            if(!dados) return alert("Erro local.");
+            if(!dados) return alert("Ingresso não encontrado na lista local.");
+            
             const evInfo = todosEventos[dados.evento];
             let fundoImg = await carregarImagemSegura(evInfo?.bgPdf);
             
-            const { jsPDF } = window.jspdf; const doc = new jsPDF();
-            if(fundoImg) { doc.addImage(fundoImg, 'JPEG', 0, 0, 210, 297); doc.setFillColor(255, 255, 255); doc.roundedRect(60, 70, 90, 100, 5, 5, 'F'); }
-            doc.text(dados.aluno.toUpperCase(), 105, 85, {align: 'center', maxWidth: 80});
-            doc.setFontSize(10); doc.text(`ID: ${key}`, 105, 97, {align: 'center'});
+            const { jsPDF } = window.jspdf; 
+            const doc = new jsPDF();
+
+            if(fundoImg) { 
+                doc.addImage(fundoImg, 'JPEG', 0, 0, 210, 297); 
+                doc.setFillColor(255, 255, 255); 
+                doc.roundedRect(60, 70, 90, 100, 5, 5, 'F'); 
+            }
+
+            doc.setTextColor(0,0,0);
+            doc.setFontSize(16);
+            doc.text((dados.aluno || "").toUpperCase(), 105, 85, {align: 'center', maxWidth: 80});
             
-            const qrDiv = document.getElementById('qrcode-temp'); qrDiv.innerHTML = "";
+            doc.setFontSize(10); 
+            doc.text(`ID: ${key}`, 105, 97, {align: 'center'});
+            
+            const qrDiv = document.getElementById('qrcode-temp'); 
+            qrDiv.innerHTML = "";
             new QRCode(qrDiv, { text: key, width: 256, height: 256 });
+            
             await new Promise(r => setTimeout(r, 100));
             const qrCanvas = qrDiv.querySelector('canvas');
             if(qrCanvas) doc.addImage(qrCanvas.toDataURL("image/png"), 'PNG', 75, 110, 60, 60);
+            
             doc.save(`Ingresso_${dados.aluno}.pdf`);
         }
 
         function carregarImagemSegura(url) { return new Promise((r) => { if(!url) return r(null); const i = new Image(); i.crossOrigin="anonymous"; i.onload=()=> {const c=document.createElement("canvas");c.width=i.width;c.height=i.height;c.getContext("2d").drawImage(i,0,0);r(c.toDataURL("image/jpeg",0.7))}; i.onerror=()=>r(null); i.src=url; }); }
-        function filtrarTabela() { const t = document.getElementById('busca').value.toLowerCase(); document.querySelectorAll('#tabelaIngressos tr').forEach(l => l.style.display = l.innerText.toLowerCase().includes(t)?'':'none'); }
+        
+        function filtrarTabela() { 
+            const t = document.getElementById('busca').value.toLowerCase(); 
+            document.querySelectorAll('#tabelaIngressos tr').forEach(l => {
+                l.style.display = l.innerText.toLowerCase().includes(t) ? '' : 'none';
+            }); 
+        }
     </script>
 </body>
 </html>
