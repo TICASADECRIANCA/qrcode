@@ -41,8 +41,8 @@
                             <input id="evEstoque" type="number" placeholder="Ex: 300" class="w-full pt-5 pb-2 px-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-500 font-bold text-blue-900">
                         </div>
                         <div class="relative">
-                            <label class="text-[10px] font-bold text-gray-400 absolute top-1 left-2">MAX POR PESSOA</label>
-                            <input id="evQtd" type="number" placeholder="Ex: 5" value="5" class="w-full pt-5 pb-2 px-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-500">
+                            <label class="text-[10px] font-bold text-gray-400 absolute top-1 left-2">QTD POR ALUNO</label>
+                            <input id="evQtd" type="number" placeholder="Ex: 2" value="1" min="1" class="w-full pt-5 pb-2 px-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-500 font-bold text-blue-900">
                         </div>
                     </div>
 
@@ -218,6 +218,9 @@
                     else if(porcentagem > 90) corBarra = 'bg-red-600';
                 }
 
+                // MOSTRA O LIMITE DE INGRESSOS POR ALUNO
+                const limitIngressos = ev.limit_ingressos || 1;
+
                 // CARD LISTAGEM
                 listaAdm.innerHTML += `
                 <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 relative group flex flex-col justify-between">
@@ -226,6 +229,7 @@
                             <div>
                                 <p class="font-bold text-sm text-slate-800 truncate w-32">${ev.nome}</p>
                                 <p class="text-[10px] text-gray-500">${ev.data}</p>
+                                <p class="text-[10px] text-blue-600 font-bold bg-blue-100 px-1 rounded inline-block">Limite Aluno: ${limitIngressos}</p>
                             </div>
                             <div class="flex gap-1">
                                 <button onclick="alternarTrava('${ev.key}', ${isLiberado})" class="text-[10px] font-bold border px-2 py-1 rounded transition flex items-center gap-1 ${corTrava}">
@@ -319,15 +323,33 @@
             document.getElementById('avQtdGerar').value = "1"; 
         }
 
-        // --- OUTRAS FUNÇÕES ---
+        // --- SALVAR EVENTO (MODIFICADO PARA O LIMITE) ---
         function salvarEvento() {
-            const nome = document.getElementById('evNome').value; const data = document.getElementById('evData').value;
-            const estoque = document.getElementById('evEstoque').value; const img = document.getElementById('evImg').value;
-            const bgPdf = document.getElementById('evBg').value; const zap = document.getElementById('evZap').value;
+            const nome = document.getElementById('evNome').value; 
+            const data = document.getElementById('evData').value;
+            const estoque = document.getElementById('evEstoque').value; 
+            const img = document.getElementById('evImg').value;
+            const bgPdf = document.getElementById('evBg').value; 
+            const zap = document.getElementById('evZap').value;
+            // AQUI PEGAMOS O VALOR DE INGRESSOS POR PESSOA
+            const qtdPorAluno = document.getElementById('evQtd').value;
+
             if(!nome || !data) return alert("Preencha Nome e Data!");
-            db.ref('eventos').push({ nome, data, imagem: img, bgPdf, estoque: parseInt(estoque) || 0, qtd: 5, contato: zap, liberado: false });
+            
+            db.ref('eventos').push({ 
+                nome, 
+                data, 
+                imagem: img, 
+                bgPdf, 
+                estoque: parseInt(estoque) || 0, 
+                // AQUI SALVAMOS COMO 'limit_ingressos' PARA A PAGINA DO ALUNO LER
+                limit_ingressos: parseInt(qtdPorAluno) || 1, 
+                contato: zap, 
+                liberado: false 
+            });
             alert("Evento Criado (Bloqueado)!"); location.reload();
         }
+
         function renderizarTabelaIngressos(lista) {
             const tbody = document.getElementById('tabelaIngressos'); tbody.innerHTML = "";
             let qtd = 0; let avulsos = 0;
