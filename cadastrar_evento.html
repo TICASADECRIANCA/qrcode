@@ -11,11 +11,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
     <style>
-        /* Scrollbar personalizada para a tabela */
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
 <body class="bg-slate-100 font-sans pb-20">
@@ -23,8 +21,7 @@
     <nav class="bg-slate-900 text-white p-4 px-8 flex justify-between items-center shadow-lg sticky top-0 z-50">
         <div class="font-black italic text-xl">ESCOLAPRO <span class="text-blue-400">ADMIN</span></div>
         <div class="flex gap-3">
-            <a href="index.html" class="px-4 py-2 bg-slate-700 rounded-lg text-xs font-bold hover:bg-slate-600 transition">🏠 Início</a>
-            <a href="validar.html" class="px-4 py-2 bg-blue-600 rounded-lg text-xs font-bold hover:bg-blue-500 transition">📷 Validar</a>
+            <a href="index.html" target="_blank" class="px-4 py-2 bg-blue-600 rounded-lg text-xs font-bold hover:bg-blue-500 transition">👀 Ver Página do Aluno</a>
         </div>
     </nav>
 
@@ -37,14 +34,26 @@
                 <div class="space-y-3">
                     <input id="evNome" type="text" placeholder="Nome do Evento" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-500">
                     <input id="evData" type="text" placeholder="Data (Ex: 25/10)" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-500">
-                    <input id="evQtd" type="number" placeholder="Ingressos p/ cadastro" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-500">
-                    <input id="evImg" type="text" placeholder="Link Imagem Capa" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-500">
+                    
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="relative">
+                            <label class="text-[10px] font-bold text-gray-400 absolute top-1 left-2">ESTOQUE AVULSO</label>
+                            <input id="evEstoque" type="number" placeholder="Ex: 300" class="w-full pt-5 pb-2 px-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-500 font-bold text-blue-900">
+                        </div>
+                        <div class="relative">
+                            <label class="text-[10px] font-bold text-gray-400 absolute top-1 left-2">MAX POR PESSOA</label>
+                            <input id="evQtd" type="number" placeholder="Ex: 5" value="5" class="w-full pt-5 pb-2 px-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-500">
+                        </div>
+                    </div>
+
+                    <input id="evImg" type="text" placeholder="Link da Imagem (URL)" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-500">
                     <input id="evBg" type="text" placeholder="Link Fundo PDF (Opcional)" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-500">
+                    
                     <div class="p-3 bg-yellow-50 rounded-xl border border-yellow-200">
                         <p class="text-xs font-bold text-yellow-700 mb-1">É pago?</p>
-                        <input id="evZap" type="text" placeholder="Zap (Ex: 551199999...)" class="w-full bg-white p-2 rounded-lg text-sm outline-none border border-yellow-300">
+                        <input id="evZap" type="text" placeholder="Zap (5511999...)" class="w-full bg-white p-2 rounded-lg text-sm outline-none border border-yellow-300">
                     </div>
-                    <button onclick="salvarEvento()" class="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-black transition">Salvar Evento</button>
+                    <button onclick="salvarEvento()" class="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-black transition">Salvar (Inicia Bloqueado 🔒)</button>
                 </div>
             </div>
 
@@ -54,14 +63,34 @@
                 <button onclick="importarAlunos()" class="w-full mt-2 bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition">Importar Lista</button>
             </div>
 
-            <div class="bg-blue-50 p-6 rounded-3xl border border-blue-100">
+            <div class="bg-blue-50 p-6 rounded-3xl border border-blue-100 relative">
                 <h3 class="font-black text-blue-800 text-lg mb-4 flex items-center gap-2">🎟️ Ingresso Avulso</h3>
+                
+                <div id="avulsoInfo" class="hidden mb-3 p-2 bg-white rounded border border-blue-200 text-xs text-blue-800 font-bold text-center">
+                    Selecione um evento
+                </div>
+
                 <div class="space-y-3">
-                    <select id="selEventos" class="w-full p-3 bg-white rounded-xl text-sm outline-none text-slate-700 font-bold"><option>Carregando...</option></select>
-                    <input id="avMat" type="number" placeholder="Matrícula" class="w-full p-3 bg-white rounded-xl text-sm outline-none" onblur="buscarAlunoAvulso(this.value)">
+                    <select id="selEventos" onchange="atualizarInfoEstoque()" class="w-full p-3 bg-white rounded-xl text-sm outline-none text-slate-700 font-bold">
+                        <option value="">Selecione o Evento...</option>
+                    </select>
+                    
+                    <div class="flex gap-2">
+                        <div class="w-2/3">
+                            <input id="avMat" type="number" placeholder="Matrícula" class="w-full p-3 bg-white rounded-xl text-sm outline-none" onblur="buscarAlunoAvulso(this.value)">
+                        </div>
+                        <div class="w-1/3 relative">
+                            <label class="absolute -top-2 left-2 bg-blue-100 px-1 text-[10px] font-bold text-blue-800 rounded">QTD</label>
+                            <input id="avQtdGerar" type="number" value="1" min="1" max="100" class="w-full p-3 bg-white rounded-xl text-sm outline-none font-bold text-center border border-blue-200 text-blue-900">
+                        </div>
+                    </div>
+
                     <input id="avAluno" type="text" placeholder="Nome" class="w-full p-3 bg-white rounded-xl text-sm outline-none font-bold text-blue-800">
                     <input id="avResp" type="text" placeholder="Responsável" class="w-full p-3 bg-white rounded-xl text-sm outline-none">
-                    <button onclick="gerarAvulso()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition">Gerar & Baixar</button>
+                    
+                    <button onclick="gerarAvulso()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200">
+                        Gerar Ingressos
+                    </button>
                 </div>
             </div>
         </div>
@@ -69,16 +98,17 @@
         <div class="lg:col-span-2 space-y-6">
             
             <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                <h4 class="font-bold text-slate-700 mb-2 text-sm uppercase">Meus Eventos Ativos</h4>
-                <div id="listaEventosAdmin" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-40 overflow-y-auto custom-scrollbar">
-                    </div>
+                <h4 class="font-bold text-slate-700 mb-2 text-sm uppercase">Gerenciar Eventos (Trava & Estoque)</h4>
+                <div id="listaEventosAdmin" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto custom-scrollbar">
+                    <p>Carregando...</p>
+                </div>
             </div>
 
             <div class="bg-white rounded-3xl shadow-sm border border-slate-200 flex flex-col h-[600px]"> 
                 <div class="p-6 border-b border-gray-100 flex justify-between items-center shrink-0">
                     <div>
                         <h3 class="font-black text-slate-800 text-lg">Ingressos Emitidos</h3>
-                        <p class="text-xs text-gray-400 font-bold mt-1">Total: <span id="totalGeral">0</span> | Validados: <span id="totalValidados" class="text-green-600">0</span></p>
+                        <p class="text-xs text-gray-400 font-bold mt-1">Total: <span id="totalGeral">0</span> | Avulsos: <span id="totalAvulsos" class="text-blue-600">0</span></p>
                     </div>
                     <input type="text" id="busca" onkeyup="filtrarTabela()" placeholder="🔍 Buscar nome..." class="p-2 bg-gray-50 rounded-lg text-sm border focus:ring-2 ring-blue-500 outline-none w-48">
                 </div>
@@ -89,7 +119,7 @@
                             <tr>
                                 <th class="p-4 bg-gray-50">Aluno</th>
                                 <th class="p-4 bg-gray-50">Evento</th>
-                                <th class="p-4 bg-gray-50">Status</th>
+                                <th class="p-4 bg-gray-50">Tipo</th>
                                 <th class="p-4 bg-gray-50 text-right">Ações</th>
                             </tr>
                         </thead>
@@ -118,239 +148,216 @@
 
         let todosEventos = {}; 
         let todosIngressos = [];
+        let contagemAvulsosPorEvento = {}; 
 
-        // 1. CARREGAR EVENTOS (Para Select e para Lista de Exclusão)
-        db.ref('eventos').on('value', snap => {
-            const sel = document.getElementById('selEventos'); 
+        // 1. CARREGAR DADOS
+        function carregarTudo() {
+            db.ref('eventos').on('value', snapEventos => {
+                todosEventos = {};
+                if(snapEventos.exists()) {
+                    snapEventos.forEach(i => todosEventos[i.key] = { key: i.key, ...i.val() });
+                }
+                
+                db.ref('ingressos').on('value', snapIngressos => {
+                    todosIngressos = [];
+                    contagemAvulsosPorEvento = {}; // Zera contagem
+                    if(snapIngressos.exists()) {
+                        snapIngressos.forEach(i => {
+                            const ing = { key: i.key, ...i.val() };
+                            todosIngressos.push(ing);
+                            
+                            // SÓ CONTA SE FOR AVULSO
+                            if(ing.tipo === 'Avulso') {
+                                if(!contagemAvulsosPorEvento[ing.evento]) contagemAvulsosPorEvento[ing.evento] = 0;
+                                contagemAvulsosPorEvento[ing.evento]++;
+                            }
+                        });
+                    }
+                    atualizarUIEventos();
+                    renderizarTabelaIngressos(todosIngressos);
+                    atualizarInfoEstoque();
+                });
+            });
+        }
+        carregarTudo();
+
+        // 2. ATUALIZAR LISTAS
+        function atualizarUIEventos() {
             const listaAdm = document.getElementById('listaEventosAdmin');
-            
-            sel.innerHTML = ""; 
+            const sel = document.getElementById('selEventos');
+            const selecaoAtual = sel.value; 
+
             listaAdm.innerHTML = "";
-            todosEventos = {};
+            sel.innerHTML = '<option value="">Selecione o Evento...</option>';
 
-            if(!snap.exists()) {
-                listaAdm.innerHTML = "<p class='text-xs text-gray-400 p-2'>Nenhum evento.</p>";
-                return;
-            }
+            const eventosArray = Object.values(todosEventos);
+            if(eventosArray.length === 0) { listaAdm.innerHTML = "<p class='text-xs text-gray-400 p-2'>Nenhum evento.</p>"; return; }
 
-            snap.forEach(i => {
-                const ev = i.val(); 
-                todosEventos[ev.nome] = ev; // Cache para uso na imagem
+            eventosArray.forEach(ev => {
+                const vendidos = contagemAvulsosPorEvento[ev.nome] || 0;
+                const limite = parseInt(ev.estoque) || 0;
+                const disponivel = limite - vendidos;
+                const statusTexto = limite > 0 ? `Restam ${Math.max(0, disponivel)}` : "Ilimitado";
 
-                // Preenche Select do Avulso
+                // STATUS DE LIBERAÇÃO
+                const isLiberado = ev.liberado === true;
+                const iconeTrava = isLiberado ? '🔓' : '🔒';
+                const corTrava = isLiberado ? 'text-green-600 bg-green-100 border-green-200' : 'text-slate-600 bg-slate-100 border-slate-200';
+                const textoTrava = isLiberado ? 'LIBERADO' : 'BLOQUEADO';
+
+                // SELECT DO AVULSO
                 const opt = document.createElement('option'); 
-                opt.value = ev.nome; 
-                opt.text = ev.nome; 
+                opt.value = ev.nome; opt.text = `${ev.nome} (${statusTexto})`; 
                 sel.appendChild(opt);
 
-                // Preenche Lista de Gerenciamento (Com botão excluir)
+                // BARRA DE PROGRESSO DO ESTOQUE
+                let porcentagem = 0; let corBarra = 'bg-blue-600';
+                if(limite > 0) {
+                    porcentagem = Math.min((vendidos / limite) * 100, 100);
+                    if(porcentagem >= 100) corBarra = 'bg-gray-800'; 
+                    else if(porcentagem > 90) corBarra = 'bg-red-600';
+                }
+
+                // CARD LISTAGEM
                 listaAdm.innerHTML += `
-                <div class="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100">
+                <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 relative group flex flex-col justify-between">
                     <div>
-                        <p class="font-bold text-xs text-slate-800 truncate w-32">${ev.nome}</p>
-                        <p class="text-[10px] text-gray-500">${ev.data}</p>
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <p class="font-bold text-sm text-slate-800 truncate w-32">${ev.nome}</p>
+                                <p class="text-[10px] text-gray-500">${ev.data}</p>
+                            </div>
+                            <div class="flex gap-1">
+                                <button onclick="alternarTrava('${ev.key}', ${isLiberado})" class="text-[10px] font-bold border px-2 py-1 rounded transition flex items-center gap-1 ${corTrava}">
+                                    ${iconeTrava} ${textoTrava}
+                                </button>
+                                <button onclick="excluirEvento('${ev.key}')" class="text-[10px] bg-white border border-red-100 text-red-400 px-2 py-1 rounded hover:bg-red-50 hover:text-red-600 transition">🗑️</button>
+                            </div>
+                        </div>
+                        
+                        <div class="w-full bg-gray-200 rounded-full h-2.5 mb-1"><div class="${corBarra} h-2.5 rounded-full" style="width: ${porcentagem}%"></div></div>
+                        <div class="flex justify-between text-[10px] font-bold text-gray-500">
+                            <span>Avulsos: ${vendidos}</span>
+                            <span>Estoque Avulso: ${limite > 0 ? limite : '∞'}</span>
+                        </div>
                     </div>
-                    <button onclick="excluirEvento('${i.key}')" class="text-[10px] bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200 font-bold">🗑️</button>
                 </div>`;
             });
-        });
+            if(selecaoAtual) sel.value = selecaoAtual;
+        }
 
-        // 2. CARREGAR INGRESSOS
-        db.ref('ingressos').on('value', snap => {
-            const tbody = document.getElementById('tabelaIngressos'); 
-            tbody.innerHTML = ""; 
-            todosIngressos = [];
-            let qtd = 0; let val = 0;
-            
-            if(!snap.exists()){
-                tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-gray-400">Nenhum ingresso.</td></tr>`;
-                return;
-            }
+        // --- FUNÇÕES DE CONTROLE ---
+        function alternarTrava(key, statusAtual) {
+            db.ref('eventos/'+key).update({ liberado: !statusAtual });
+        }
 
-            const lista = [];
-            snap.forEach(item => { if(item.val()) lista.push({ key: item.key, ...item.val() }); });
+        function atualizarInfoEstoque() {
+            const nomeEvento = document.getElementById('selEventos').value;
+            const divInfo = document.getElementById('avulsoInfo');
+            if(!nomeEvento) { divInfo.classList.add('hidden'); return; }
 
-            lista.reverse().forEach(ing => {
-                qtd++; if(ing.utilizado) val++; todosIngressos.push(ing);
+            const evData = Object.values(todosEventos).find(e => e.nome === nomeEvento);
+            if(evData) {
+                const limite = parseInt(evData.estoque) || 0;
+                const vendidos = contagemAvulsosPorEvento[nomeEvento] || 0;
+                const restantes = limite - vendidos;
+                divInfo.classList.remove('hidden');
+                
+                let textoStatus = !evData.liberado ? "<span class='block text-gray-500 mb-1'>🔒 O Aluno vê 'EM BREVE'</span>" : "";
 
-                const statusClass = ing.utilizado ? 'text-green-600 bg-green-50' : 'text-blue-600 bg-blue-50';
-                const statusText = ing.utilizado ? 'VALIDADO' : 'ATIVO';
-
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50 transition";
-                tr.innerHTML = `
-                    <td class="p-4">
-                        <div class="font-bold text-slate-800">${ing.aluno}</div>
-                        <div class="text-xs text-slate-400 font-mono">Mat: ${ing.matricula}</div>
-                    </td>
-                    <td class="p-4"><span class="text-xs font-bold uppercase bg-gray-100 text-gray-600 px-2 py-1 rounded-md">${ing.evento}</span></td>
-                    <td class="p-4"><span class="text-[10px] font-black uppercase px-2 py-1 rounded-full ${statusClass}">${statusText}</span></td>
-                    <td class="p-4 text-right flex justify-end gap-2">
-                         <button onclick="reimprimir('${ing.key}')" title="Baixar PDF" class="bg-slate-800 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-black">⬇️</button>
-                        <button onclick="enviarEmailAdmin('${ing.key}')" title="Enviar Email" class="bg-blue-100 text-blue-600 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-200">✉️</button>
-                        <button onclick="excluirIngresso('${ing.key}')" title="Excluir" class="bg-red-100 text-red-600 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-red-200">🗑️</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-            document.getElementById('totalGeral').innerText = qtd; 
-            document.getElementById('totalValidados').innerText = val;
-        });
-
-        // --- FUNÇÕES DE AÇÃO ---
-
-        function excluirEvento(key) {
-            if(confirm("ATENÇÃO: Deseja excluir este evento? Os ingressos já gerados continuarão existindo.")) {
-                db.ref('eventos/'+key).remove();
+                if(limite > 0) {
+                    if(restantes <= 0) divInfo.innerHTML = `${textoStatus}⛔ ESGOTADO! (${vendidos}/${limite})`;
+                    else divInfo.innerHTML = `${textoStatus}✅ DISPONÍVEIS: ${restantes} (Total: ${limite})`;
+                } else {
+                    divInfo.innerHTML = `${textoStatus}♾️ Estoque Ilimitado`;
+                }
             }
         }
 
-        function excluirIngresso(key) {
-            if(confirm("Tem certeza que deseja apagar este ingresso permanentemente?")) {
-                db.ref('ingressos/'+key).remove();
-            }
-        }
-
-        async function enviarEmailAdmin(key) {
-            const btn = event.target;
-            const originalText = btn.innerHTML;
-            btn.innerHTML = "⏳";
-            btn.disabled = true;
-
-            try {
-                // 1. Busca dados
-                const t = todosIngressos.find(i => i.key === key);
-                if(!t) throw new Error("Ingresso não encontrado.");
-
-                // 2. Pergunta email
-                const emailDestino = prompt(`Enviar ingresso de ${t.aluno} para qual email?`, "");
-                if(!emailDestino) { btn.innerHTML = originalText; btn.disabled = false; return; }
-
-                // 3. Busca imagem fundo
-                const evInfo = todosEventos[t.evento];
-                let fundoImg = await carregarImagemSegura(evInfo?.bgPdf);
-
-                // 4. Gera Imagem (Mesma lógica do mobile)
-                const base64Img = await gerarImagemCanvas(t.aluno, key, t.evento, fundoImg);
-
-                // 5. Envia
-                await emailjs.send("service_r1vrjkp", "template_4yvqw5g", {
-                    nome_responsavel: t.responsavel || "Responsável",
-                    to_email: emailDestino,
-                    evento: t.evento,
-                    imagem_ingresso: base64Img,
-                    message: "Reenvio solicitado pela administração."
-                });
-
-                alert("E-mail enviado com sucesso!");
-
-            } catch(e) {
-                console.error(e);
-                alert("Erro: " + e.message);
-            } finally {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }
-        }
-
-        // --- FUNÇÕES AUXILIARES E GERAÇÃO DE IMAGEM ---
-
-        async function gerarImagemCanvas(alunoNome, idUnico, nomeEvento, fundoImgEl) {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const width = 200; const height = 300;
-            canvas.width = width; canvas.height = height;
-
-            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, width, height);
-
-            if(fundoImgEl) {
-                const ratio = Math.max(width / fundoImgEl.width, height / fundoImgEl.height);
-                const cx = (width - fundoImgEl.width * ratio) / 2;
-                const cy = (height - fundoImgEl.height * ratio) / 2;
-                ctx.drawImage(fundoImgEl, 0, 0, fundoImgEl.width, fundoImgEl.height, cx, cy, fundoImgEl.width * ratio, fundoImgEl.height * ratio);
-            }
-
-            const boxW = 180; const boxH = 160;
-            const boxX = (width - boxW) / 2; const boxY = (height - boxH) / 2 + 30;
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
-            ctx.beginPath(); ctx.roundRect(boxX, boxY, boxW, boxH, 15); ctx.fill();
-
-            ctx.fillStyle = '#1e293b'; ctx.textAlign = 'center';
-            ctx.font = 'bold 12px sans-serif';
-            ctx.fillText(nomeEvento.substring(0, 20), width/2, boxY + 25);
-
-            let fs = 16; ctx.font = `900 ${fs}px sans-serif`; ctx.fillStyle = '#000000';
-            const nomeUp = alunoNome.toUpperCase();
-            while (ctx.measureText(nomeUp).width > boxW - 10 && fs > 8) { fs--; ctx.font = `900 ${fs}px sans-serif`; }
-            ctx.fillText(nomeUp, width/2, boxY + 50);
-
-            ctx.font = '10px monospace'; ctx.fillStyle = '#64748b';
-            ctx.fillText(`ID: ${idUnico}`, width/2, boxY + 68);
-
-            const qrDiv = document.createElement('div');
-            new QRCode(qrDiv, { text: idUnico, width: 80, height: 80 });
-            await new Promise(r => setTimeout(r, 100));
-            const qrC = qrDiv.querySelector('canvas');
-            if(qrC) ctx.drawImage(qrC, (width - 80)/2, boxY + 75);
-
-            return canvas.toDataURL('image/jpeg', 0.7);
-        }
-
-        // Funções de Cadastro (Mantidas)
-        function salvarEvento() {
-            const nome = document.getElementById('evNome').value;
-            const data = document.getElementById('evData').value;
-            const img = document.getElementById('evImg').value;
-            const bgPdf = document.getElementById('evBg').value;
-            const qtd = document.getElementById('evQtd').value || 1;
-            const zap = document.getElementById('evZap').value;
-            if(!nome || !data) return alert("Preencha dados!");
-            db.ref('eventos').push({ nome, data, imagem: img, bgPdf, qtd, contato: zap });
-            alert("Evento criado!"); document.getElementById('evNome').value = "";
-        }
-
-        function importarAlunos() {
-            try {
-                const lista = JSON.parse(document.getElementById('jsonAlunos').value);
-                if(!Array.isArray(lista)) throw new Error("Formato inválido");
-                let ups = {};
-                lista.forEach(a => { if(a.matricula) ups['/alunos_db/'+a.matricula] = { nome: a.nome, turma: a.turma||"" }; });
-                db.ref().update(ups).then(()=>alert("Importado!")).catch(e=>alert(e.message));
-            } catch(e){ alert("JSON Inválido"); }
-        }
-
+        // --- GERAR AVULSO (TRAVA ESTOQUE) ---
         async function gerarAvulso() {
-            const ev = document.getElementById('selEventos').value;
+            const evNome = document.getElementById('selEventos').value;
             const al = document.getElementById('avAluno').value;
             const mt = document.getElementById('avMat').value;
             const rp = document.getElementById('avResp').value || "Escola";
-            if(!al || !mt) return alert("Preencha dados!");
-            const id = `${mt}-AVULSO-${Date.now().toString().slice(-5)}`;
-            await db.ref('ingressos/'+id).set({ aluno: al, matricula: mt, responsavel: rp, evento: ev, utilizado: false, data: new Date().toISOString() });
-            // Atualiza tabela automaticamente pelo listener
-            alert("Ingresso Gerado!");
+            const qtd = parseInt(document.getElementById('avQtdGerar').value) || 1;
+
+            if(!evNome || !al || !mt) return alert("Preencha todos os campos!");
+            if(qtd < 1) return alert("Mínimo 1 ingresso.");
+
+            const eventoObj = Object.values(todosEventos).find(e => e.nome === evNome);
+            if(!eventoObj) return alert("Evento não encontrado.");
+
+            // CHECAGEM DE ESTOQUE
+            const limite = parseInt(eventoObj.estoque) || 0;
+            const vendidos = contagemAvulsosPorEvento[evNome] || 0;
+            const disponivel = limite - vendidos;
+
+            if(limite > 0) {
+                if((vendidos + qtd) > limite) {
+                    alert(`⛔ ESTOQUE INSUFICIENTE!\nVocê pediu ${qtd}, mas só restam ${Math.max(0, disponivel)} no estoque AVULSO.`);
+                    return; 
+                }
+            }
+
+            if(qtd > 5) alert("Gerando ingressos, aguarde...");
+            const time = Date.now();
+
+            for(let i = 0; i < qtd; i++) {
+                const id = `${mt}-AVULSO-${time.toString().slice(-5)}${i}`; 
+                await db.ref('ingressos/'+id).set({ 
+                    aluno: al, 
+                    matricula: mt, 
+                    responsavel: rp, 
+                    evento: evNome, 
+                    utilizado: false, 
+                    tipo: 'Avulso', // Marcador CRUCIAL para o estoque
+                    data: new Date().toISOString() 
+                });
+            }
+            alert(`${qtd} ingresso(s) gerado(s)!`);
+            document.getElementById('avQtdGerar').value = "1"; 
         }
 
-        async function buscarAlunoAvulso(mat) {
-            if(!mat) return;
-            const s = await db.ref('alunos_db/'+mat).once('value');
-            if(s.exists()) document.getElementById('avAluno').value = s.val().nome;
+        // --- OUTRAS FUNÇÕES ---
+        function salvarEvento() {
+            const nome = document.getElementById('evNome').value; const data = document.getElementById('evData').value;
+            const estoque = document.getElementById('evEstoque').value; const img = document.getElementById('evImg').value;
+            const bgPdf = document.getElementById('evBg').value; const zap = document.getElementById('evZap').value;
+            if(!nome || !data) return alert("Preencha Nome e Data!");
+            db.ref('eventos').push({ nome, data, imagem: img, bgPdf, estoque: parseInt(estoque) || 0, qtd: 5, contato: zap, liberado: false });
+            alert("Evento Criado (Bloqueado)!"); location.reload();
         }
-
-        async function reimprimir(key) {
+        function renderizarTabelaIngressos(lista) {
+            const tbody = document.getElementById('tabelaIngressos'); tbody.innerHTML = "";
+            let qtd = 0; let avulsos = 0;
+            if(lista.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-gray-400">Nenhum ingresso.</td></tr>`; return; }
+            lista.slice().reverse().forEach(ing => {
+                qtd++; if(ing.tipo === 'Avulso') avulsos++;
+                const tipoBadge = ing.tipo === 'Avulso' ? '<span class="text-[10px] bg-purple-100 text-purple-700 px-2 py-1 rounded font-bold">AVULSO</span>' : '<span class="text-[10px] bg-gray-100 text-gray-500 px-2 py-1 rounded font-bold">ALUNO</span>';
+                tbody.innerHTML += `<tr class="border-b border-gray-50 hover:bg-slate-50"><td class="p-4"><div class="font-bold text-slate-800">${ing.aluno}</div><div class="text-xs text-slate-400 font-mono">${ing.matricula}</div></td><td class="p-4"><span class="text-xs font-bold uppercase bg-gray-100 text-gray-600 px-2 py-1 rounded-md">${ing.evento}</span></td><td class="p-4">${tipoBadge}</td><td class="p-4 text-right"><button onclick="reimprimir('${ing.key}')" class="mr-2">⬇️</button><button onclick="excluirIngresso('${ing.key}')" class="text-red-400">🗑️</button></td></tr>`;
+            });
+            document.getElementById('totalGeral').innerText = qtd; document.getElementById('totalAvulsos').innerText = avulsos;
+        }
+        function excluirEvento(key) { if(confirm("Deseja excluir este evento?")) db.ref('eventos/'+key).remove(); }
+        function excluirIngresso(key) { if(confirm("Apagar ingresso?")) db.ref('ingressos/'+key).remove(); }
+        function importarAlunos() { try { const lista = JSON.parse(document.getElementById('jsonAlunos').value); let ups = {}; lista.forEach(a => { if(a.matricula) ups['/alunos_db/'+a.matricula] = { nome: a.nome, turma: a.turma||"" }; }); db.ref().update(ups).then(()=>alert("Importado!")); } catch(e){ alert("JSON Inválido"); } }
+        async function buscarAlunoAvulso(mat) { if(!mat) return; const s = await db.ref('alunos_db/'+mat).once('value'); if(s.exists()) document.getElementById('avAluno').value = s.val().nome; }
+        function filtrarTabela() { const v = document.getElementById('busca').value.toLowerCase(); document.querySelectorAll('#tabelaIngressos tr').forEach(r => r.style.display = r.innerText.toLowerCase().includes(v) ? '' : 'none'); }
+        async function reimprimir(key) { 
             const t = todosIngressos.find(i => i.key === key);
-            const evInfo = todosEventos[t.evento];
-            let bg = await carregarImagemSegura(evInfo?.bgPdf);
-            const imgBase64 = await gerarImagemCanvas(t.aluno, key, t.evento, bg);
-            const link = document.createElement('a'); link.href = imgBase64; link.download = `Ingresso_${t.aluno}.jpg`;
-            link.click();
-        }
-
-        function carregarImagemSegura(url) { return new Promise(r => { if(!url) return r(null); const i = new Image(); i.crossOrigin="anonymous"; i.onload=()=>r(i); i.onerror=()=>r(null); i.src=url; }); }
-        
-        function filtrarTabela() {
-            const v = document.getElementById('busca').value.toLowerCase();
-            document.querySelectorAll('#tabelaIngressos tr').forEach(r => r.style.display = r.innerText.toLowerCase().includes(v) ? '' : 'none');
+            const evInfo = Object.values(todosEventos).find(e => e.nome === t.evento);
+            let bg = null; if(evInfo && evInfo.bgPdf) { bg = new Image(); bg.crossOrigin="anonymous"; bg.src = evInfo.bgPdf; await new Promise(r => { bg.onload=r; bg.onerror=r; }); }
+            const c = document.createElement('canvas'); const x = c.getContext('2d'); c.width=200; c.height=300; x.fillStyle='#fff'; x.fillRect(0,0,200,300);
+            if(bg) { const r = Math.max(200/bg.width, 300/bg.height); x.drawImage(bg, 0,0, bg.width, bg.height, (200-bg.width*r)/2, (300-bg.height*r)/2, bg.width*r, bg.height*r); }
+            x.fillStyle='rgba(255,255,255,0.9)'; x.beginPath(); x.roundRect(10,130,180,160,10); x.fill();
+            x.fillStyle='#000'; x.textAlign='center'; x.font='bold 12px sans-serif'; x.fillText(t.evento.substring(0,20),100,155);
+            let fs = 16; x.font = `900 ${fs}px sans-serif`; x.fillStyle = '#000000'; const nomeUp = t.aluno.toUpperCase();
+            while (x.measureText(nomeUp).width > 170 && fs > 8) { fs--; x.font = `900 ${fs}px sans-serif`; }
+            x.fillText(nomeUp,100,180); x.font='10px monospace'; x.fillStyle='#64748b'; x.fillText(key,100,200);
+            const q = document.createElement('div'); new QRCode(q, {text:key, width:80, height:80}); await new Promise(r=>setTimeout(r,100));
+            if(q.querySelector('canvas')) x.drawImage(q.querySelector('canvas'), 60, 210);
+            const link = document.createElement('a'); link.href=c.toDataURL('image/jpeg', 0.8); link.download=`Ingresso-${t.aluno}.jpg`; link.click();
         }
     </script>
 </body>
