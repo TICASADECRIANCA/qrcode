@@ -2,66 +2,332 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Configurar Eventos - ESCOLAPRO</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Admin - ESCOLAPRO</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        .glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); }
+    </style>
 </head>
-<body class="bg-gray-100 p-8">
-    <div id="login" class="max-w-md mx-auto bg-white p-10 rounded-[2.5rem] shadow-2xl mt-20">
-        <h2 class="text-2xl font-black mb-6 text-center">Configuração de Evento</h2>
-        <input type="password" id="pw" placeholder="Senha Admin" class="w-full p-4 bg-gray-50 rounded-2xl mb-4 outline-none border-2 border-transparent focus:border-blue-500">
-        <button onclick="check()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold uppercase">Entrar</button>
+<body class="bg-slate-100 font-sans pb-20">
+
+    <nav class="bg-slate-900 text-white p-4 px-8 flex justify-between items-center shadow-lg">
+        <div class="font-black italic text-xl">ESCOLAPRO <span class="text-blue-400">ADMIN</span></div>
+        <div class="flex gap-3">
+            <a href="index.html" class="px-4 py-2 bg-slate-700 rounded-lg text-xs font-bold hover:bg-slate-600 transition">🏠 Início</a>
+            <a href="validar.html" class="px-4 py-2 bg-blue-600 rounded-lg text-xs font-bold hover:bg-blue-500 transition">📷 Validar</a>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4">
+
+        <div class="space-y-8">
+            
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+                <h3 class="font-black text-slate-800 text-lg mb-4 flex items-center gap-2">📅 Criar Evento</h3>
+                <div class="space-y-3">
+                    <input id="evNome" type="text" placeholder="Nome do Evento" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-500">
+                    <input id="evData" type="text" placeholder="Data (Ex: 25/10)" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-500">
+                    <input id="evQtd" type="number" placeholder="Ingressos p/ cadastro (Padrão: 1)" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-500">
+                    <input id="evImg" type="text" placeholder="Link Imagem Capa" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-500">
+                    <input id="evBg" type="text" placeholder="Link Fundo PDF (Opcional)" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-500">
+                    <button onclick="salvarEvento()" class="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-black transition">Salvar Evento</button>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 p-6 rounded-3xl border border-blue-100">
+                <h3 class="font-black text-blue-800 text-lg mb-4 flex items-center gap-2">🎟️ Ingresso Avulso</h3>
+                <p class="text-xs text-blue-600 mb-4">Gere um ingresso rápido sem passar pela tela inicial.</p>
+                
+                <div class="space-y-3">
+                    <select id="selEventos" class="w-full p-3 bg-white rounded-xl text-sm outline-none text-slate-700 font-bold">
+                        <option>Carregando eventos...</option>
+                    </select>
+                    <input id="avAluno" type="text" placeholder="Nome do Aluno" class="w-full p-3 bg-white rounded-xl text-sm outline-none">
+                    <input id="avMat" type="number" placeholder="Matrícula" class="w-full p-3 bg-white rounded-xl text-sm outline-none">
+                    <input id="avResp" type="text" placeholder="Responsável (Opcional)" class="w-full p-3 bg-white rounded-xl text-sm outline-none">
+                    
+                    <button onclick="gerarAvulso()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/30">Gerar & Baixar</button>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="lg:col-span-2 space-y-6">
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                    <p class="text-xs font-bold text-gray-400 uppercase">Total Emitidos</p>
+                    <h2 id="totalGeral" class="text-3xl font-black text-slate-800">0</h2>
+                </div>
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                    <p class="text-xs font-bold text-gray-400 uppercase">Validados</p>
+                    <h2 id="totalValidados" class="text-3xl font-black text-green-500">0</h2>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+                    <h3 class="font-black text-slate-800 text-lg">Lista de Passageiros</h3>
+                    <input type="text" id="busca" onkeyup="filtrarTabela()" placeholder="🔍 Buscar nome..." class="p-2 bg-gray-50 rounded-lg text-sm outline-none border focus:border-blue-500">
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-gray-600">
+                        <thead class="bg-gray-50 text-gray-400 font-bold uppercase text-xs">
+                            <tr>
+                                <th class="p-4">Aluno</th>
+                                <th class="p-4">Evento</th>
+                                <th class="p-4">Status</th>
+                                <th class="p-4 text-right">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaIngressos" class="divide-y divide-gray-100">
+                            <tr><td class="p-4 text-center" colspan="4">Carregando dados...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
     </div>
 
-    <div id="painel" class="hidden max-w-4xl mx-auto">
-        <div class="bg-white p-8 rounded-[2.5rem] shadow-xl mb-8">
-            <div class="flex justify-between items-center mb-8">
-                <h1 class="text-3xl font-black">Novo Evento</h1>
-                <a href="index.html" class="text-blue-600 font-bold underline">Voltar ao Site</a>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input type="text" id="n" placeholder="Nome do Evento" class="p-4 bg-gray-50 rounded-2xl outline-none border">
-                <input type="text" id="d" placeholder="Data (ex: 15/06 às 19h)" class="p-4 bg-gray-50 rounded-2xl outline-none border">
-                <input type="number" id="qtd" placeholder="Qtd Ingressos por Aluno" class="p-4 bg-gray-50 rounded-2xl outline-none border">
-                <input type="text" id="imgPortal" placeholder="Link da Foto no Site" class="p-4 bg-gray-50 rounded-2xl outline-none border">
-                <input type="text" id="bgPdf" placeholder="Link do Fundo do PDF (A4)" class="md:col-span-2 p-4 bg-gray-50 rounded-2xl outline-none border">
-                <button onclick="add()" class="md:col-span-2 bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg">Publicar Evento</button>
-            </div>
-        </div>
-        <div id="lista" class="space-y-3"></div>
-    </div>
+    <div id="qrcode-temp" style="display:none"></div>
 
     <script>
-        const firebaseConfig = { apiKey: "AIzaSyBFDlEOhuUerWjSfK_mPVxoj5sGbSDhe9k", authDomain: "ingressoscdc-9ce88.firebaseapp.com", databaseURL: "https://ingressoscdc-9ce88-default-rtdb.firebaseio.com", projectId: "ingressoscdc-9ce88", storageBucket: "ingressoscdc-9ce88.firebasestorage.app", messagingSenderId: "976193676383", appId: "1:976193676383:web:8f141a1bd705f8bc0ae7ea" };
+        // CONFIGURAÇÃO DO FIREBASE (Chaves Novas)
+        const firebaseConfig = { 
+            apiKey: "AIzaSyBFDlEOhuUerWjSfK_mPVxoj5sGbSDhe9k", 
+            authDomain: "ingressoscdc-9ce88.firebaseapp.com", 
+            databaseURL: "https://ingressoscdc-9ce88-default-rtdb.firebaseio.com", 
+            projectId: "ingressoscdc-9ce88", 
+            storageBucket: "ingressoscdc-9ce88.firebasestorage.app", 
+            messagingSenderId: "976193676383", 
+            appId: "1:976193676383:web:8f141a1bd705f8bc0ae7ea" 
+        };
+        
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        function check() { if(document.getElementById('pw').value === "123456") { document.getElementById('login').classList.add('hidden'); document.getElementById('painel').classList.remove('hidden'); load(); } else { alert("Senha incorreta"); } }
+        let todosEventos = {};
+        let todosIngressos = [];
 
-        function add() {
-            const nome = document.getElementById('n').value;
-            const data = document.getElementById('d').value;
-            const qtd = document.getElementById('qtd').value;
-            const imagem = document.getElementById('imgPortal').value;
-            const bgPdf = document.getElementById('bgPdf').value;
-            if(!nome || !qtd) return alert("Preencha Nome e Quantidade");
-            db.ref('eventos/' + Date.now()).set({nome, data, qtd, imagem, bgPdf}).then(() => location.reload());
+        // 1. CARREGAR EVENTOS (Para o Select e para pegar a imagem de fundo)
+        db.ref('eventos').on('value', snap => {
+            const sel = document.getElementById('selEventos');
+            sel.innerHTML = "";
+            todosEventos = {}; // Reinicia cache
+
+            snap.forEach(i => {
+                const ev = i.val();
+                todosEventos[ev.nome] = ev; // Mapeia nome -> objeto do evento
+                
+                const opt = document.createElement('option');
+                opt.value = ev.nome;
+                opt.text = ev.nome;
+                sel.appendChild(opt);
+            });
+        });
+
+        // 2. CARREGAR E LISTAR INGRESSOS
+        db.ref('ingressos').on('value', snap => {
+            const tbody = document.getElementById('tabelaIngressos');
+            tbody.innerHTML = "";
+            todosIngressos = [];
+            
+            let qtd = 0;
+            let val = 0;
+
+            if(!snap.exists()) {
+                tbody.innerHTML = `<tr><td class="p-4 text-center" colspan="4">Nenhum ingresso vendido ainda.</td></tr>`;
+                return;
+            }
+
+            // Transforma em array e inverte para mostrar os mais recentes primeiro
+            const lista = [];
+            snap.forEach(item => {
+                lista.push({ key: item.key, ...item.val() });
+            });
+            lista.reverse();
+
+            lista.forEach(ing => {
+                qtd++;
+                if(ing.utilizado) val++;
+                
+                // Salva no array global para filtro
+                todosIngressos.push(ing);
+
+                const statusBadge = ing.utilizado 
+                    ? `<span class="bg-green-100 text-green-600 px-2 py-1 rounded-full text-xs font-bold">USADO</span>` 
+                    : `<span class="bg-blue-50 text-blue-600 px-2 py-1 rounded-full text-xs font-bold">ATIVO</span>`;
+
+                // Renderiza linha
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition";
+                tr.innerHTML = `
+                    <td class="p-4 font-bold text-slate-800">
+                        ${ing.aluno}<br>
+                        <span class="text-xs text-gray-400 font-normal">Mat: ${ing.matricula}</span>
+                    </td>
+                    <td class="p-4 text-xs font-bold uppercase text-gray-500">${ing.evento}</td>
+                    <td class="p-4">${statusBadge}</td>
+                    <td class="p-4 text-right">
+                        <button onclick="reimprimir('${ing.key}')" class="bg-slate-800 text-white px-3 py-1 rounded-lg text-xs font-bold hover:bg-black transition flex items-center gap-1 ml-auto">
+                            📄 PDF
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('totalGeral').innerText = qtd;
+            document.getElementById('totalValidados').innerText = val;
+        });
+
+        // 3. FUNÇÃO: SALVAR NOVO EVENTO
+        function salvarEvento() {
+            const nome = document.getElementById('evNome').value;
+            const data = document.getElementById('evData').value;
+            const img = document.getElementById('evImg').value;
+            const bgPdf = document.getElementById('evBg').value;
+            const qtd = document.getElementById('evQtd').value || 1;
+
+            if(!nome || !data) return alert("Preencha Nome e Data!");
+
+            db.ref('eventos').push({ nome, data, imagem: img, bgPdf, qtd: qtd });
+            alert("Evento criado!");
+            // Limpar campos
+            document.getElementById('evNome').value = "";
         }
 
-        function load() {
-            db.ref('eventos').on('value', snap => {
-                const l = document.getElementById('lista'); l.innerHTML = "";
-                snap.forEach(item => {
-                    l.innerHTML += `<div class="flex justify-between p-4 bg-white rounded-2xl shadow-sm items-center">
-                        <span class="font-bold">${item.val().nome} (${item.val().qtd} un)</span>
-                        <button onclick="del('${item.key}')" class="text-red-500 font-bold">Excluir</button>
-                    </div>`;
-                });
+        // 4. FUNÇÃO: GERAR AVULSO (Botão do card azul)
+        async function gerarAvulso() {
+            const evNome = document.getElementById('selEventos').value;
+            const aluno = document.getElementById('avAluno').value;
+            const mat = document.getElementById('avMat').value;
+            const resp = document.getElementById('avResp').value || "Escola";
+
+            if(!aluno || !mat) return alert("Preencha Nome do Aluno e Matrícula!");
+
+            // Gera ID único
+            const idUnico = `${mat}-AVULSO-${Date.now().toString().slice(-4)}`;
+
+            // Salva no banco
+            await db.ref('ingressos/' + idUnico).set({
+                aluno: aluno,
+                matricula: mat,
+                responsavel: resp,
+                evento: evNome,
+                utilizado: false,
+                dataGeracao: new Date().toISOString(),
+                tipo: 'Avulso'
+            });
+
+            // Chama a função de gerar PDF imediatamente
+            // Passamos um objeto "fake" de ingresso pq acabamos de criar
+            const ingressoObj = {
+                key: idUnico,
+                aluno, matricula: mat, evento: evNome
+            };
+            
+            reimprimir(idUnico, ingressoObj);
+            
+            // Limpa campos
+            document.getElementById('avAluno').value = "";
+            document.getElementById('avMat').value = "";
+        }
+
+        // 5. LÓGICA DE REIMPRESSÃO (O botão "Baixar PDF" da lista)
+        async function reimprimir(key, dadosDiretos = null) {
+            let dados;
+
+            if(dadosDiretos) {
+                dados = dadosDiretos;
+            } else {
+                // Busca os dados no array local para ser rápido
+                dados = todosIngressos.find(i => i.key === key);
+                if(!dados) return alert("Erro ao achar dados localmente.");
+            }
+
+            const btnText = event ? event.target : null;
+            if(btnText) btnText.innerText = "⏳";
+
+            // Tenta achar a imagem de fundo do evento correspondente
+            const evInfo = todosEventos[dados.evento];
+            let fundoImg = null;
+
+            if(evInfo && evInfo.bgPdf) {
+                fundoImg = await carregarImagemSegura(evInfo.bgPdf);
+            }
+
+            // GERA O PDF
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Fundo
+            if(fundoImg) {
+                doc.addImage(fundoImg, 'JPEG', 0, 0, 210, 297);
+                // Caixa branca
+                doc.setFillColor(255, 255, 255);
+                doc.roundedRect(60, 70, 90, 100, 5, 5, 'F');
+            }
+
+            // Texto
+            doc.setTextColor(0,0,0);
+            doc.setFontSize(16);
+            doc.text(dados.aluno.toUpperCase(), 105, 85, {align: 'center', maxWidth: 80});
+            
+            doc.setFontSize(10);
+            doc.text("INGRESSO REIMPRESSO", 105, 92, {align: 'center'});
+            doc.text(`ID: ${key}`, 105, 97, {align: 'center'});
+
+            // QR Code
+            const qrDiv = document.getElementById('qrcode-temp'); qrDiv.innerHTML = "";
+            new QRCode(qrDiv, { text: key, width: 256, height: 256 });
+            await new Promise(r => setTimeout(r, 100));
+            const qrCanvas = qrDiv.querySelector('canvas');
+            if(qrCanvas) {
+                doc.addImage(qrCanvas.toDataURL("image/png"), 'PNG', 75, 110, 60, 60);
+            }
+
+            doc.save(`Ingresso_${dados.aluno}.pdf`);
+            if(btnText) btnText.innerText = "📄 PDF";
+        }
+
+        // Função Auxiliar de Imagem (Igual à do mobile)
+        function carregarImagemSegura(url) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                img.onload = () => {
+                    const canvas = document.createElement("canvas");
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext("2d");
+                    ctx.drawImage(img, 0, 0);
+                    resolve(canvas.toDataURL("image/jpeg", 0.7));
+                };
+                img.onerror = () => resolve(null);
+                img.src = url;
             });
         }
-        function del(id) { if(confirm("Apagar evento?")) db.ref('eventos/'+id).remove(); }
+
+        function filtrarTabela() {
+            const termo = document.getElementById('busca').value.toLowerCase();
+            const linhas = document.querySelectorAll('#tabelaIngressos tr');
+            
+            linhas.forEach(linha => {
+                const texto = linha.innerText.toLowerCase();
+                linha.style.display = texto.includes(termo) ? '' : 'none';
+            });
+        }
     </script>
 </body>
 </html>
-
