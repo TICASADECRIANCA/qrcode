@@ -16,7 +16,7 @@
         <div id="loader" class="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-6"></div>
         <div id="successIcon" class="hidden text-6xl mb-4">✅</div>
         <h3 id="statusMsg" class="text-2xl font-black text-slate-800 text-center">Processando...</h3>
-        <p id="subMsg" class="text-gray-500 mt-2 text-center text-sm max-w-xs">Gerando ingressos compactos e enviando e-mail.</p>
+        <p id="subMsg" class="text-gray-500 mt-2 text-center text-sm max-w-xs">Gerando ingressos e unificando envio.</p>
     </div>
 
     <nav class="bg-white p-4 shadow-sm flex flex-wrap justify-between items-center px-4 md:px-8 border-b">
@@ -39,7 +39,7 @@
                 </div>
                 <div>
                     <label class="text-xs font-bold ml-4 text-gray-500 uppercase">E-mail</label>
-                    <input type="email" id="email" placeholder="Para receber a imagem do ingresso" class="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 ring-blue-500">
+                    <input type="email" id="email" placeholder="Para receber os ingressos" class="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 ring-blue-500">
                 </div>
                 
                 <div id="filhos" class="space-y-3 pt-2 border-t border-gray-100"></div>
@@ -54,14 +54,12 @@
         </div>
     </div>
 
-    <div id="qrcode-hidden" style="position:absolute; left:-9999px;"></div>
-
     <script>
-        // --- CONFIGURAÇÕES ---
+        // CONFIGURAÇÕES GERAIS
         let clicks = 0;
         function acessoSecreto() {
             clicks++;
-            if (clicks === 5) { if(confirm("Ir para Admin?")) window.location.href = "cadastrar_evento.html"; clicks = 0; }
+            if (clicks === 5) { if(confirm("Ir para Admin?")) window.location.href = "admin.html"; clicks = 0; }
             setTimeout(() => { clicks = 0; }, 2000);
         }
 
@@ -76,8 +74,6 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        
-        // INICIALIZAÇÃO EMAILJS
         emailjs.init("RmJx_2rhtntD90vsH");
 
         let currentEv = null;
@@ -134,22 +130,15 @@
             initModal(); document.getElementById('modalIngresso').classList.remove('hidden');
         }
 
-        // --- NOVA LÓGICA DE GERAÇÃO DE IMAGEM PEQUENA (200px) ---
+        // --- GERAÇÃO IMAGEM INDIVIDUAL ---
         async function gerarImagemIngresso(alunoNome, idUnico, fundoImgEl) {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            
-            // Dimensões SUPER COMPACTAS (Solicitado 200px)
-            const width = 300;
-            const height = 400; // Proporção ajustada
-            canvas.width = width;
-            canvas.height = height;
+            const width = 200; const height = 300;
+            canvas.width = width; canvas.height = height;
 
-            // 1. Fundo Branco Base
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, width, height);
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, width, height);
 
-            // 2. Imagem de Fundo (Capa)
             if(fundoImgEl) {
                 const ratio = Math.max(width / fundoImgEl.width, height / fundoImgEl.height);
                 const centerShift_x = (width - fundoImgEl.width * ratio) / 2;
@@ -157,59 +146,74 @@
                 ctx.drawImage(fundoImgEl, 0, 0, fundoImgEl.width, fundoImgEl.height, centerShift_x, centerShift_y, fundoImgEl.width * ratio, fundoImgEl.height * ratio);
             }
 
-            // 3. Caixa Branca de Dados (Menor)
-            const boxW = 180;
-            const boxH = 60;
-            const boxX = (width - boxW) / 2;
-            const boxY = (height - boxH) / 2 + 30;
-            
+            const boxW = 180; const boxH = 160;
+            const boxX = (width - boxW) / 2; const boxY = (height - boxH) / 2 + 30;
             ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
-            ctx.beginPath();
-            ctx.roundRect(boxX, boxY, boxW, boxH, 15);
-            ctx.fill();
+            ctx.beginPath(); ctx.roundRect(boxX, boxY, boxW, boxH, 15); ctx.fill();
 
-            // 4. Configuração de Texto
-            ctx.fillStyle = '#1e293b'; 
-            ctx.textAlign = 'center';
-            
-            // Nome do Evento (Fonte menor: 12px)
+            ctx.fillStyle = '#1e293b'; ctx.textAlign = 'center';
             ctx.font = 'bold 12px sans-serif';
             ctx.fillText(currentEv.nome.substring(0, 20), width/2, boxY + 25);
 
-            // --- NOME DO ALUNO COM REDUÇÃO AUTOMÁTICA DE FONTE ---
-            let fontSizeAluno = 16; // Começa com 16px
+            let fontSizeAluno = 16;
             ctx.font = `900 ${fontSizeAluno}px sans-serif`;
             ctx.fillStyle = '#000000';
             const nomeUp = alunoNome.toUpperCase();
-            const maxTextWidth = boxW - 10; // Margem de segurança
-
-            // Loop: Enquanto o texto for mais largo que a caixa, diminui a fonte
-            while (ctx.measureText(nomeUp).width > maxTextWidth && fontSizeAluno > 8) {
-                 fontSizeAluno--;
-                 ctx.font = `900 ${fontSizeAluno}px sans-serif`;
+            while (ctx.measureText(nomeUp).width > boxW - 10 && fontSizeAluno > 8) {
+                 fontSizeAluno--; ctx.font = `900 ${fontSizeAluno}px sans-serif`;
             }
-            // Desenha o nome com o tamanho calculado
             ctx.fillText(nomeUp, width/2, boxY + 50);
-            // -------------------------------------------------------
 
-            // ID (Fonte menor: 10px)
-            ctx.font = '10px monospace';
-            ctx.fillStyle = '#64748b';
+            ctx.font = '10px monospace'; ctx.fillStyle = '#64748b';
             ctx.fillText(`ID: ${idUnico}`, width/2, boxY + 68);
 
-            // 5. QR Code (Tamanho reduzido para 80px)
             const qrSize = 80;
             const qrDiv = document.createElement('div');
             new QRCode(qrDiv, { text: idUnico, width: qrSize, height: qrSize, correctLevel : QRCode.CorrectLevel.L });
             await new Promise(r => setTimeout(r, 150)); 
             const qrCanvas = qrDiv.querySelector('canvas');
-            if(qrCanvas) {
-                // Centraliza o QR Code menor
-                ctx.drawImage(qrCanvas, (width - qrSize)/2, boxY + 75);
-            }
+            if(qrCanvas) ctx.drawImage(qrCanvas, (width - qrSize)/2, boxY + 75);
 
-            // Retorna JPEG compressão média (0.7) para garantir arquivo pequeno
-            return canvas.toDataURL('image/jpeg', 0.7); 
+            return canvas.toDataURL('image/jpeg', 0.8); 
+        }
+
+        // --- NOVA FUNÇÃO: CONCATENAR IMAGENS VERTICALMENTE ---
+        async function unirImagensVerticalmente(listaBase64) {
+            if(listaBase64.length === 0) return null;
+            if(listaBase64.length === 1) return listaBase64[0];
+
+            // Carrega todas as imagens na memória
+            const imagensCarregadas = await Promise.all(listaBase64.map(base64 => {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => resolve(img);
+                    img.src = base64;
+                });
+            }));
+
+            const largura = 200;
+            const alturaItem = 300;
+            const gap = 20; // Espaço entre ingressos
+            // Altura total = (altura * qtd) + (gaps)
+            const alturaTotal = (alturaItem * imagensCarregadas.length) + (gap * (imagensCarregadas.length - 1));
+
+            const canvasM = document.createElement('canvas');
+            canvasM.width = largura;
+            canvasM.height = alturaTotal;
+            const ctxM = canvasM.getContext('2d');
+
+            // Fundo geral
+            ctxM.fillStyle = "#f3f4f6"; // Um cinza bem clarinho no fundo da 'tira'
+            ctxM.fillRect(0,0, largura, alturaTotal);
+
+            let currentY = 0;
+            imagensCarregadas.forEach(img => {
+                ctxM.drawImage(img, 0, currentY);
+                currentY += alturaItem + gap;
+            });
+
+            // Retorna com qualidade um pouco menor para não ficar gigante no email
+            return canvasM.toDataURL('image/jpeg', 0.6);
         }
 
         async function processar() {
@@ -232,42 +236,57 @@
                     await new Promise((resolve) => { imgBgElement.onload = resolve; imgBgElement.onerror = resolve; });
                 }
 
-                let lastImgData = null;
+                // Lista para guardar os Base64 de cada ingresso
+                let listaImagensGeradas = [];
 
                 for(let i=0; i<nomes.length; i++) {
                     const n = nomes[i].value; const m = mats[i].value;
                     const qtd = parseInt(currentEv.qtd) || 1;
+                    
                     for(let j=1; j <= qtd; j++) {
                         const idUnico = `${m}-${j}`;
+                        
+                        // 1. Salva no Banco
                         await db.ref('ingressos/' + idUnico).set({ aluno: n, matricula: m, responsavel: pai, evento: currentEv.nome, utilizado: false, data: new Date().toISOString() });
 
-                        // GERA A IMAGEM PEQUENA
+                        // 2. Gera Imagem
                         const base64Img = await gerarImagemIngresso(n, idUnico, imgBgElement);
-                        lastImgData = base64Img; 
+                        listaImagensGeradas.push(base64Img);
 
-                        // DOWNLOAD AUTOMÁTICO
+                        // 3. Download Individual (O pai ainda quer baixar separado para mandar no zap)
                         const link = document.createElement('a'); link.href = base64Img; link.download = `Ingresso_${n}_${j}.jpg`;
                         document.body.appendChild(link); link.click(); document.body.removeChild(link);
-                        await new Promise(r => setTimeout(r, 800));
+
+                        // Pequeno delay para download não engasgar
+                        await new Promise(r => setTimeout(r, 600));
                     }
                 }
 
-                // ENVIO DE E-MAIL (Base64 no corpo)
-                if(lastImgData && mail) {
+                // 4. ENVIO DE E-MAIL UNIFICADO (CONCATENAÇÃO)
+                if(mail && listaImagensGeradas.length > 0) {
+                    document.getElementById('subMsg').innerText = "Unificando imagens para envio...";
+                    
+                    // Cria a "Tripa" de imagens
+                    const imagemUnica = await unirImagensVerticalmente(listaImagensGeradas);
+
                     await emailjs.send("service_r1vrjkp", "template_4yvqw5g", {
-                        nome_responsavel: pai, to_email: mail, evento: currentEv.nome,
-                        imagem_ingresso: lastImgData  // <--- IMPORTANTE: SEU TEMPLATE PRECISA TER <img src="{{imagem_ingresso}}">
+                        nome_responsavel: pai, 
+                        to_email: mail, 
+                        evento: currentEv.nome,
+                        imagem_ingresso: imagemUnica, // Vai a imagem compridona aqui
+                        message: `Seguem seus ${listaImagensGeradas.length} ingressos.`
                     });
+                    console.log(`Email único enviado com ${listaImagensGeradas.length} ingressos.`);
                 }
 
-                document.getElementById('loader').classList.add('hidden'); document.getElementById('successIcon').classList.remove('hidden');
+                document.getElementById('loader').classList.add('hidden'); 
+                document.getElementById('successIcon').classList.remove('hidden');
                 document.getElementById('statusMsg').innerText = "Sucesso!"; 
+                document.getElementById('subMsg').innerText = "Verifique seus Downloads e E-mail.";
                 setTimeout(() => location.reload(), 4000);
 
-            } catch(e) { console.error(e); alert("Erro: " + e.message); document.getElementById('overlay').classList.add('hidden'); document.getElementById('modalIngresso').classList.remove('hidden'); }
+            } catch(e) { console.error(e); alert("Erro: " + e.message); location.reload(); }
         }
     </script>
 </body>
 </html>
-
-
