@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CASAQR - Eventos</title>
+    <title>Ingressos Escola</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <style>
         .grayscale-card { filter: grayscale(100%); opacity: 0.8; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -19,7 +21,7 @@
     <div class="bg-blue-900 text-white p-6 shadow-lg rounded-b-3xl mb-6 relative overflow-hidden">
         <div class="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cube-coat.png')]"></div>
         <div class="relative z-10 text-center">
-            <h1 class="text-2xl font-black italic tracking-tighter">CASAQR <span class="text-blue-300">EVENTOS</span></h1>
+            <h1 class="text-2xl font-black italic tracking-tighter">ESCOLAPRO <span class="text-blue-300">EVENTOS</span></h1>
             <p class="text-blue-200 text-xs mt-1 font-medium uppercase tracking-widest">Portal do Aluno</p>
         </div>
     </div>
@@ -40,22 +42,24 @@
             <div class="p-6 pt-10 text-center">
                 <div class="mb-2 inline-block p-3 rounded-full bg-blue-50 text-blue-600 text-2xl">🎟️</div>
                 <h3 class="text-xl font-black text-slate-800 mb-1 leading-tight" id="mdEvento">Nome do Evento</h3>
-                <p class="text-xs text-gray-500 mb-6 font-medium uppercase tracking-wide">Preencha para garantir</p>
+                <p class="text-xs text-gray-500 mb-4 font-medium uppercase tracking-wide">Preencha os dados</p>
                 
-                <div class="space-y-3">
-                    <div class="text-left">
-                        <label class="text-[10px] font-bold text-gray-400 ml-2">MATRÍCULA DO ALUNO</label>
-                        <input type="number" id="inputMatricula" placeholder="Digite a matrícula..." class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl font-bold text-slate-700 outline-none focus:ring-2 ring-blue-500 transition-all">
+                <div class="space-y-3 text-left">
+                    
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 ml-2">MATRÍCULA (Digite e aguarde)</label>
+                        <input type="number" id="inputMatricula" onblur="verificarAluno()" placeholder="Ex: 102030" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl font-bold text-slate-700 outline-none focus:ring-2 ring-blue-500 transition-all">
+                        <div id="feedbackAluno" class="mt-1 text-xs font-bold hidden px-2"></div>
                     </div>
 
-                    <div class="text-left">
+                    <div>
                         <label class="text-[10px] font-bold text-gray-400 ml-2">NOME DO RESPONSÁVEL</label>
-                        <input type="text" id="inputResponsavel" placeholder="Quem está solicitando?" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-medium text-slate-700 outline-none focus:ring-2 ring-blue-500 transition-all">
+                        <input type="text" id="inputResponsavel" placeholder="Quem está solicitando?" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm text-slate-700 outline-none focus:ring-2 ring-blue-500">
                     </div>
 
-                    <div class="text-left">
-                        <label class="text-[10px] font-bold text-gray-400 ml-2">EMAIL (Para contato)</label>
-                        <input type="email" id="inputEmail" placeholder="seuemail@exemplo.com" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-medium text-slate-700 outline-none focus:ring-2 ring-blue-500 transition-all">
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 ml-2">EMAIL (Para o comprovante)</label>
+                        <input type="email" id="inputEmail" placeholder="seuemail@exemplo.com" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm text-slate-700 outline-none focus:ring-2 ring-blue-500">
                     </div>
 
                     <button onclick="gerarIngresso()" id="btnGerar" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 active:scale-95 transition shadow-lg shadow-blue-200 mt-2">
@@ -71,6 +75,7 @@
     </div>
 
     <script>
+        // --- 1. CONFIGURAÇÕES ---
         const firebaseConfig = { 
             apiKey: "AIzaSyBFDlEOhuUerWjSfK_mPVxoj5sGbSDhe9k", 
             authDomain: "ingressoscdc-9ce88.firebaseapp.com", 
@@ -83,8 +88,13 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let eventoSelecionado = null;
+        // EMAILJS INICIALIZADO
+        emailjs.init("RmJx_2rhtntD90vsH"); 
 
+        let eventoSelecionado = null;
+        let dadosAlunoEncontrado = null; // Agora guarda Nome e Turma
+
+        // --- 2. CARREGAR EVENTOS ---
         db.ref('eventos').on('value', (snapshot) => {
             const container = document.getElementById('eventosContainer');
             container.innerHTML = "";
@@ -129,6 +139,7 @@
             });
         });
 
+        // --- 3. MODAL ---
         function abrirModal(nome, key) {
             eventoSelecionado = nome;
             document.getElementById('mdEvento').innerText = nome;
@@ -139,73 +150,130 @@
         function fecharModal() {
             document.getElementById('modalIngresso').classList.add('hidden');
             document.getElementById('modalIngresso').classList.remove('flex');
-            // Limpar todos os campos
+            
+            // Limpa tudo
             document.getElementById('inputMatricula').value = "";
             document.getElementById('inputResponsavel').value = "";
             document.getElementById('inputEmail').value = "";
+            document.getElementById('feedbackAluno').classList.add('hidden');
+            dadosAlunoEncontrado = null;
         }
 
+        // --- 4. VALIDAR ALUNO E PEGAR TURMA ---
+        async function verificarAluno() {
+            const mat = document.getElementById('inputMatricula').value.trim();
+            const feed = document.getElementById('feedbackAluno');
+            
+            if(!mat) {
+                feed.classList.add('hidden');
+                dadosAlunoEncontrado = null;
+                return;
+            }
+
+            feed.innerHTML = "🔍 Buscando...";
+            feed.className = "mt-1 text-xs font-bold px-2 text-blue-500 block";
+
+            try {
+                const snap = await db.ref('alunos_db/'+mat).once('value');
+                if(snap.exists()) {
+                    const dados = snap.val();
+                    
+                    // Salva nome e turma
+                    dadosAlunoEncontrado = {
+                        nome: dados.nome,
+                        turma: dados.turma || "Turma não inf." // Garante que não quebre se estiver vazio
+                    };
+
+                    feed.innerHTML = `✅ ${dadosAlunoEncontrado.nome} (${dadosAlunoEncontrado.turma})`;
+                    feed.className = "mt-1 text-xs font-bold px-2 text-green-600 block";
+                } else {
+                    dadosAlunoEncontrado = null;
+                    feed.innerHTML = `❌ Matrícula não encontrada`;
+                    feed.className = "mt-1 text-xs font-bold px-2 text-red-500 block";
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        // --- 5. GERAR INGRESSO + EMAIL ---
         async function gerarIngresso() {
             const mat = document.getElementById('inputMatricula').value.trim();
             const resp = document.getElementById('inputResponsavel').value.trim();
             const email = document.getElementById('inputEmail').value.trim();
             const btn = document.getElementById('btnGerar');
-            
-            // Validação Completa
-            if(!mat || !resp || !email) { 
-                Swal.fire({ icon: 'warning', title: 'Atenção', text: 'Por favor, preencha todos os campos!', confirmButtonColor: '#2563EB' }); 
-                return; 
+
+            if(!mat || !resp || !email) {
+                return Swal.fire({ icon: 'warning', title: 'Faltam dados', text: 'Preencha todos os campos.' });
             }
-            
+
+            // Garante validação
+            if(!dadosAlunoEncontrado) {
+                await verificarAluno();
+                if(!dadosAlunoEncontrado) {
+                    return Swal.fire({ icon: 'error', title: 'Erro', text: 'Matrícula inválida.' });
+                }
+            }
+
             const textoOriginal = btn.innerHTML;
-            btn.innerHTML = `<span class="animate-spin inline-block mr-2">↻</span> Processando...`;
+            btn.innerHTML = `<span class="animate-spin inline-block mr-2">↻</span> Gerando...`;
             btn.disabled = true;
 
             try {
-                // 1. Busca Aluno
-                const snapAluno = await db.ref('alunos_db/'+mat).once('value');
-                if(!snapAluno.exists()) {
-                    Swal.fire({ icon: 'error', title: 'Não encontrado', text: 'Matrícula não encontrada.', confirmButtonColor: '#EF4444' });
-                    restaurarBotao(btn, textoOriginal); return;
-                }
-                const dadosAluno = snapAluno.val();
-                
-                // 2. Verifica Duplicidade
+                // Checa duplicidade
                 const checkSnap = await db.ref('ingressos').orderByChild('matricula').equalTo(mat).once('value');
                 let jaTem = false;
                 if(checkSnap.exists()) {
-                    checkSnap.forEach(child => { if(child.val().evento === eventoSelecionado) jaTem = true; });
+                    checkSnap.forEach(c => { if(c.val().evento === eventoSelecionado) jaTem = true; });
                 }
 
                 if(jaTem) {
-                    Swal.fire({ icon: 'info', title: 'Já garantido!', text: `O aluno(a) ${dadosAluno.nome} já possui ingresso.`, confirmButtonColor: '#3B82F6' });
+                    Swal.fire({ icon: 'info', title: 'Já garantido', text: `Este aluno já possui ingresso.` });
                     fecharModal(); restaurarBotao(btn, textoOriginal); return;
                 }
 
-                // 3. Cria o ID e Salva
-                const id = `${mat}-${Date.now().toString().slice(-6)}`;
-                await db.ref('ingressos/' + id).set({
-                    aluno: dadosAluno.nome,
+                // ID Único
+                const idIngresso = `${mat}-${Date.now().toString().slice(-6)}`;
+                
+                // SALVA NO FIREBASE (COM TURMA)
+                await db.ref('ingressos/' + idIngresso).set({
+                    aluno: dadosAlunoEncontrado.nome,
+                    turma: dadosAlunoEncontrado.turma, // <--- CAMPO NOVO
                     matricula: mat,
-                    turma: dadosAluno.turma || "N/A",
-                    responsavel: resp,  // Agora salva o Responsável
-                    email: email,       // Agora salva o Email
+                    responsavel: resp,
+                    email: email,
                     evento: eventoSelecionado,
                     tipo: 'Aluno',
                     utilizado: false,
                     data: new Date().toISOString()
                 });
 
+                // ENVIA EMAIL (COM TURMA E SEUS IDs)
+                const templateParams = {
+                    nome_aluno: dadosAlunoEncontrado.nome,
+                    turma: dadosAlunoEncontrado.turma, // Pode usar {{turma}} no template do EmailJS
+                    nome_responsavel: resp,
+                    evento: eventoSelecionado,
+                    codigo_ingresso: idIngresso,
+                    to_email: email
+                };
+
+                // SEUS IDs AQUI:
+                emailjs.send("service_r1vrjkp", "template_4yvqw5g", templateParams)
+                    .then(() => console.log("Email enviado"))
+                    .catch((err) => console.error("Erro email", err));
+
                 fecharModal();
                 Swal.fire({ 
                     icon: 'success', 
-                    title: 'Confirmado!', 
-                    html: `Ingresso garantido para <b>${dadosAluno.nome}</b>!<br>Enviamos os detalhes para seu email.`, 
-                    confirmButtonColor: '#10B981' 
+                    title: 'Sucesso!', 
+                    html: `Ingresso de <b>${dadosAlunoEncontrado.nome}</b> confirmado!<br>Enviado para ${email}.`,
+                    confirmButtonColor: '#10B981'
                 });
 
             } catch (error) {
-                console.error(error); Swal.fire({ icon: 'error', title: 'Erro', text: 'Erro de conexão.' });
+                console.error(error);
+                Swal.fire({ icon: 'error', title: 'Erro', text: 'Erro de conexão.' });
             }
             restaurarBotao(btn, textoOriginal);
         }
