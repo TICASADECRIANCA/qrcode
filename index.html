@@ -8,7 +8,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body class="bg-gray-100 font-sans">
@@ -16,8 +15,9 @@
     <div id="overlay" class="hidden fixed inset-0 bg-white/95 z-[100] flex flex-col items-center justify-center p-4">
         <div id="loader" class="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-6"></div>
         <div id="successIcon" class="hidden text-6xl mb-4">✅</div>
-        <h3 id="statusMsg" class="text-2xl font-black text-slate-800 text-center">Verificando...</h3>
-        <p id="subMsg" class="text-gray-500 mt-2 text-center">Aguarde um momento.</p>
+        <h3 id="statusMsg" class="text-2xl font-black text-slate-800 text-center">Processando...</h3>
+        <p id="subMsg" class="text-gray-500 mt-2 text-center text-sm max-w-xs">Gerando imagens leves (Max 40kb) e enviando e-mail.</p>
+        <div id="render-canvas-container" class="hidden"></div>
     </div>
 
     <nav class="bg-white p-4 shadow-sm flex flex-wrap justify-between items-center px-4 md:px-8 border-b">
@@ -40,16 +40,15 @@
                 </div>
                 <div>
                     <label class="text-xs font-bold ml-4 text-gray-500 uppercase">E-mail</label>
-                    <input type="email" id="email" placeholder="Para receber o PDF" class="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 ring-blue-500">
+                    <input type="email" id="email" placeholder="Para receber a imagem do ingresso" class="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 ring-blue-500">
                 </div>
                 
-                <div id="filhos" class="space-y-3 pt-2 border-t border-gray-100">
-                    </div>
+                <div id="filhos" class="space-y-3 pt-2 border-t border-gray-100"></div>
 
                 <button onclick="addFilho()" class="text-blue-600 font-bold text-xs w-full py-2 uppercase hover:bg-blue-50 rounded-xl transition">+ Incluir outro aluno</button>
                 
                 <div class="pt-4">
-                    <button onclick="processar()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition">BAIXAR PDF AGORA</button>
+                    <button onclick="processar()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition">BAIXAR & ENVIAR</button>
                     <button onclick="location.reload()" class="w-full py-3 text-gray-400 text-xs font-bold uppercase mt-2">Cancelar</button>
                 </div>
             </div>
@@ -59,7 +58,7 @@
     <div id="qrcode-temp" style="display:none"></div>
 
     <script>
-        // CONFIGURAÇÕES GERAIS
+        // --- CONFIGURAÇÕES ---
         let clicks = 0;
         function acessoSecreto() {
             clicks++;
@@ -78,98 +77,76 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        
+        // INICIALIZAÇÃO EMAILJS (SUBSTITUA PELO SEU PUBLIC KEY SE MUDAR)
         emailjs.init("RmJx_2rhtntD90vsH");
 
         let currentEv = null;
 
-        // INICIA COM UM CAMPO DE ALUNO
         function initModal() {
             document.getElementById('filhos').innerHTML = "";
             addFilho();
         }
 
-        // --- NOVA FUNÇÃO: VERIFICA MATRÍCULA NO BANCO ---
         async function verificarMatricula(inputMat) {
             const mat = inputMat.value;
-            // Acha o campo de nome correspondente (está no irmão anterior)
             const campoNome = inputMat.previousElementSibling; 
             
-            if(mat.length < 3) return; // Só busca se tiver 3+ dígitos
-
+            if(mat.length < 2) return; 
             campoNome.placeholder = "Buscando...";
             
-            // 1. BUSCA DADOS DO ALUNO
             const snap = await db.ref('alunos_db/' + mat).once('value');
-            
             if(snap.exists()) {
                 const dados = snap.val();
                 campoNome.value = dados.nome + (dados.turma ? ` (${dados.turma})` : "");
-                campoNome.readOnly = true; // TRAVA O NOME
-                campoNome.classList.add("bg-green-50", "text-green-800"); // VISUAL DE SUCESSO
-                
-                // 2. VERIFICA SE JÁ PEGOU INGRESSO PRA ESSE EVENTO
+                campoNome.readOnly = true; 
+                campoNome.classList.add("bg-green-50", "text-green-800");
                 verificarDuplicidade(mat, inputMat);
-
             } else {
                 campoNome.value = "";
-                campoNome.placeholder = "Aluno não encontrado! Verifique a matrícula.";
-                campoNome.readOnly = false; // Destrava caso tenha digitado errado
+                campoNome.placeholder = "Aluno não encontrado!";
+                campoNome.readOnly = false;
                 campoNome.classList.remove("bg-green-50", "text-green-800");
-                alert("Matrícula não cadastrada no sistema.");
-                inputMat.value = ""; // Limpa a matrícula errada
+                alert("Matrícula não cadastrada.");
+                inputMat.value = "";
             }
         }
 
         async function verificarDuplicidade(matricula, elementoInput) {
-            // Busca ingressos que tenham essa matrícula
             const tickets = await db.ref('ingressos').orderByChild('matricula').equalTo(matricula).once('value');
-            
             let jaPegou = false;
             if(tickets.exists()) {
-                tickets.forEach(t => {
-                    if(t.val().evento === currentEv.nome) {
-                        jaPegou = true;
-                    }
-                });
+                tickets.forEach(t => { if(t.val().evento === currentEv.nome) jaPegou = true; });
             }
-
             if(jaPegou) {
                 alert(`ATENÇÃO: A matrícula ${matricula} JÁ POSSUI ingresso para este evento!`);
-                elementoInput.value = ""; // Limpa matrícula
-                elementoInput.previousElementSibling.value = ""; // Limpa nome
+                elementoInput.value = ""; 
+                elementoInput.previousElementSibling.value = ""; 
             }
         }
 
         function addFilho() {
             const div = document.createElement('div');
             div.className = "p-4 bg-blue-50 rounded-2xl border border-blue-100 mt-2 relative";
-            // Note o onchange na matrícula
             div.innerHTML = `
-                <input type="text" placeholder="Nome do Aluno (Preenchimento Automático)" readonly class="n-aluno w-full bg-transparent font-bold outline-none text-blue-900 placeholder-blue-300 mb-2 cursor-not-allowed">
+                <input type="text" placeholder="Nome do Aluno" readonly class="n-aluno w-full bg-transparent font-bold outline-none text-blue-900 placeholder-blue-300 mb-2 cursor-not-allowed">
                 <input type="number" placeholder="Digite a Matrícula e aperte Tab" class="m-aluno w-full bg-white p-2 rounded-lg border border-blue-200 text-sm outline-none font-bold" onchange="verificarMatricula(this)">
-                <p class="text-[10px] text-blue-400 mt-1">Digite a matrícula para buscar o nome.</p>
             `;
             document.getElementById('filhos').appendChild(div);
         }
 
-        // CARREGA EVENTOS
         db.ref('eventos').on('value', snap => {
             const cont = document.getElementById('listaEventos'); cont.innerHTML = "";
             if(!snap.exists()){ cont.innerHTML = `<p class="col-span-3 text-center text-gray-400 mt-10">Nenhum evento.</p>`; return; }
 
             snap.forEach(i => {
                 const ev = i.val();
-                let btnHtml = "";
-                if(ev.contato) {
-                    const msg = `Olá, quero comprar ingressos para *${ev.nome}*.`;
-                    const link = `https://wa.me/${ev.contato}?text=${encodeURIComponent(msg)}`;
-                    btnHtml = `<a href="${link}" target="_blank" class="block text-center w-full bg-green-600 text-white py-4 rounded-2xl font-bold hover:bg-green-700 transition">💲 COMPRAR INGRESSO</a>`;
-                } else {
-                    btnHtml = `<button onclick="openM('${i.key}')" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-black transition">🎟️ GARANTIR INGRESSO</button>`;
-                }
+                let btnHtml = ev.contato 
+                    ? `<a href="https://wa.me/${ev.contato}?text=Quero comprar ingresso para ${ev.nome}" target="_blank" class="block text-center w-full bg-green-600 text-white py-4 rounded-2xl font-bold hover:bg-green-700 transition">💲 COMPRAR INGRESSO</a>` 
+                    : `<button onclick="openM('${i.key}')" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-black transition">🎟️ GARANTIR INGRESSO</button>`;
 
                 cont.innerHTML += `
-                <div class="bg-white rounded-[2.5rem] p-4 shadow-sm hover:shadow-xl transition duration-300 border border-gray-100">
+                <div class="bg-white rounded-[2.5rem] p-4 shadow-sm hover:shadow-xl transition border border-gray-100">
                     <div class="h-48 rounded-[2rem] bg-cover bg-center mb-4" style="background-image: url('${ev.imagem || 'https://placehold.co/600x400?text=Evento'}')"></div>
                     <div class="px-2 pb-2">
                         <h3 class="text-xl font-black text-gray-800 leading-tight mb-1">${ev.nome}</h3>
@@ -183,11 +160,85 @@
         async function openM(key) {
             currentEv = (await db.ref('eventos/'+key).once('value')).val();
             document.getElementById('nomeEvTitle').innerText = currentEv.nome;
-            initModal(); // Reseta os campos
+            initModal(); 
             document.getElementById('modalIngresso').classList.remove('hidden');
         }
 
-        // --- PROCESSAMENTO (COM VALIDAÇÃO DUPLA) ---
+        // --- LÓGICA DE GERAÇÃO DE IMAGEM (CANVAS) ---
+        async function gerarImagemIngresso(alunoNome, idUnico, fundoImgEl) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Dimensões Otimizadas para Mobile (< 40kb)
+            const width = 450;
+            const height = 650;
+            canvas.width = width;
+            canvas.height = height;
+
+            // 1. Fundo Branco
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+
+            // 2. Imagem de Fundo (Capa)
+            if(fundoImgEl) {
+                // Desenha a imagem cobrindo tudo (object-fit: cover logic)
+                const ratio = Math.max(width / fundoImgEl.width, height / fundoImgEl.height);
+                const centerShift_x = (width - fundoImgEl.width * ratio) / 2;
+                const centerShift_y = (height - fundoImgEl.height * ratio) / 2;
+                ctx.drawImage(fundoImgEl, 0, 0, fundoImgEl.width, fundoImgEl.height, centerShift_x, centerShift_y, fundoImgEl.width * ratio, fundoImgEl.height * ratio);
+            }
+
+            // 3. Caixa Branca para Dados
+            const boxW = 350;
+            const boxH = 300;
+            const boxX = (width - boxW) / 2;
+            const boxY = (height - boxH) / 2 + 50;
+            
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            ctx.beginPath();
+            ctx.roundRect(boxX, boxY, boxW, boxH, 20);
+            ctx.fill();
+            ctx.shadowColor = "rgba(0,0,0,0.2)";
+            ctx.shadowBlur = 15;
+
+            // 4. Textos
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#1e293b'; // Slate-800
+            ctx.textAlign = 'center';
+            
+            // Nome do Evento
+            ctx.font = 'bold 22px sans-serif';
+            ctx.fillText(currentEv.nome.substring(0, 25), width/2, boxY + 50);
+
+            // Nome Aluno
+            ctx.font = '900 24px sans-serif';
+            ctx.fillStyle = '#000000';
+            // Quebra de linha simples se nome for grande
+            const nomeExibicao = alunoNome.length > 20 ? alunoNome.substring(0, 20) + '...' : alunoNome;
+            ctx.fillText(nomeExibicao.toUpperCase(), width/2, boxY + 90);
+
+            // ID
+            ctx.font = '14px monospace';
+            ctx.fillStyle = '#64748b';
+            ctx.fillText(`ID: ${idUnico}`, width/2, boxY + 115);
+
+            // 5. Gerar QR Code e desenhar no Canvas
+            const qrDiv = document.createElement('div');
+            // QR Code precisa ser gerado num elemento invisível primeiro
+            const qrCodeObj = new QRCode(qrDiv, { text: idUnico, width: 150, height: 150, correctLevel : QRCode.CorrectLevel.M });
+            
+            // Pequeno delay para a lib do QR renderizar
+            await new Promise(r => setTimeout(r, 100)); 
+            
+            const qrCanvas = qrDiv.querySelector('canvas');
+            if(qrCanvas) {
+                ctx.drawImage(qrCanvas, (width - 150)/2, boxY + 130);
+            }
+
+            // Retorna DataURL comprimido (JPEG 0.6 qualidade = ~30-40kb)
+            return canvas.toDataURL('image/jpeg', 0.6); 
+        }
+
         async function processar() {
             const pai = document.getElementById('pai').value;
             const mail = document.getElementById('email').value;
@@ -195,64 +246,84 @@
             const mats = document.querySelectorAll('.m-aluno');
 
             if(!pai || !mail) return alert("Preencha Responsável e E-mail!");
-
-            // Validação final: Checa se todos os nomes foram preenchidos (se matrícula foi válida)
             for(let k=0; k<nomes.length; k++) {
-                if(nomes[k].value === "" || mats[k].value === "") {
-                    return alert("Verifique as matrículas! Todos os alunos devem ser identificados.");
-                }
+                if(nomes[k].value === "" || mats[k].value === "") return alert("Verifique as matrículas!");
             }
 
+            // UI Feedback
             window.scrollTo(0,0);
             document.getElementById('modalIngresso').classList.add('hidden');
             document.getElementById('overlay').classList.remove('hidden');
-            document.getElementById('statusMsg').innerText = "Processando...";
 
             try {
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
-                
-                let fundoImg = await carregarImagemSegura(currentEv.bgPdf);
-                let totalIngressos = 0; let alunosList = [];
+                // Carregar Imagem de Fundo (apenas uma vez)
+                let imgBgElement = null;
+                if(currentEv.bgPdf) {
+                    imgBgElement = new Image();
+                    imgBgElement.crossOrigin = "Anonymous";
+                    imgBgElement.src = currentEv.bgPdf;
+                    await new Promise((resolve) => { imgBgElement.onload = resolve; imgBgElement.onerror = resolve; });
+                }
+
+                let lastImgData = null; // Para o envio de email (pega o ultimo ou primeiro)
+                let linkDownloads = [];
 
                 for(let i=0; i<nomes.length; i++) {
                     const n = nomes[i].value; const m = mats[i].value;
-                    alunosList.push(n);
                     const qtd = parseInt(currentEv.qtd) || 1;
 
                     for(let j=1; j <= qtd; j++) {
-                        totalIngressos++; if(totalIngressos > 1) doc.addPage();
-                        if(fundoImg) { doc.addImage(fundoImg, 'JPEG', 0, 0, 210, 297); doc.setFillColor(255, 255, 255); doc.roundedRect(60, 70, 90, 100, 5, 5, 'F'); }
-                        
                         const idUnico = `${m}-${j}`;
-                        doc.setTextColor(0,0,0); doc.setFontSize(16);
-                        doc.text(n.toUpperCase(), 105, 85, {align: 'center', maxWidth: 80});
-                        doc.setFontSize(10); doc.text(`INGRESSO ${j} / ${qtd}`, 105, 92, {align: 'center'});
-                        doc.text(`ID: ${idUnico}`, 105, 97, {align: 'center'});
-
-                        const qrDiv = document.getElementById('qrcode-temp'); qrDiv.innerHTML = "";
-                        new QRCode(qrDiv, { text: idUnico, width: 256, height: 256 });
-                        await new Promise(r => setTimeout(r, 100));
-                        const qrCanvas = qrDiv.querySelector('canvas');
-                        if(qrCanvas) doc.addImage(qrCanvas.toDataURL("image/png"), 'PNG', 75, 110, 60, 60);
-
+                        
+                        // Grava no Firebase
                         await db.ref('ingressos/' + idUnico).set({ aluno: n, matricula: m, responsavel: pai, evento: currentEv.nome, utilizado: false, data: new Date().toISOString() });
+
+                        // Gera Imagem
+                        const base64Img = await gerarImagemIngresso(n, idUnico, imgBgElement);
+                        lastImgData = base64Img; // Guarda para o email
+
+                        // Força Download Automático
+                        const link = document.createElement('a');
+                        link.href = base64Img;
+                        link.download = `Ingresso_${n}_${j}.jpg`; // Salva como JPG para manter tamanho pequeno
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        // Pequeno delay para não travar o navegador em múltiplos downloads
+                        await new Promise(r => setTimeout(r, 800));
                     }
                 }
 
-                doc.save(`Ingressos_${pai.replace(/ /g,'_')}.pdf`);
-                emailjs.send("service_r1vrjkp", "template_4yvqw5g", { nome_responsavel: pai, to_email: mail, evento: currentEv.nome, message: `Confirmado: ${alunosList.join(", ")}` });
+                // ENVIO DO E-MAIL (CORRIGIDO)
+                // O EmailJS Free não aceita anexos reais. Enviamos o Base64 para ser exibido no corpo.
+                if(lastImgData) {
+                    const templateParams = {
+                        nome_responsavel: pai,
+                        to_email: mail,
+                        evento: currentEv.nome,
+                        // Passamos a string base64 inteira. No template do EmailJS você deve usar <img src="{{imagem_ingresso}}" />
+                        imagem_ingresso: lastImgData 
+                    };
 
-                document.getElementById('loader').classList.add('hidden'); document.getElementById('successIcon').classList.remove('hidden');
-                document.getElementById('statusMsg').innerText = "Sucesso!"; document.getElementById('subMsg').innerText = "Verifique o Download.";
-                setTimeout(() => location.reload(), 3000);
+                    await emailjs.send("service_r1vrjkp", "template_4yvqw5g", templateParams);
+                    console.log("Email enviado com sucesso!");
+                }
+
+                // Finalização
+                document.getElementById('loader').classList.add('hidden'); 
+                document.getElementById('successIcon').classList.remove('hidden');
+                document.getElementById('statusMsg').innerText = "Sucesso!"; 
+                document.getElementById('subMsg').innerText = "Ingressos baixados e enviados por e-mail.";
+                setTimeout(() => location.reload(), 4000);
 
             } catch(e) {
-                console.error(e); alert("Erro: " + e.message); location.reload();
+                console.error(e); 
+                alert("Erro ao processar: " + e.message);
+                document.getElementById('overlay').classList.add('hidden');
+                document.getElementById('modalIngresso').classList.remove('hidden');
             }
         }
-
-        function carregarImagemSegura(url) { return new Promise((r) => { if(!url) return r(null); const i = new Image(); i.crossOrigin="anonymous"; i.onload=()=> {const c=document.createElement("canvas");c.width=i.width;c.height=i.height;c.getContext("2d").drawImage(i,0,0);r(c.toDataURL("image/jpeg",0.7))}; i.onerror=()=>r(null); i.src=url; }); }
     </script>
 </body>
 </html>
