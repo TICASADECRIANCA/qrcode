@@ -9,12 +9,27 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     
     <style>
         .grayscale-card { filter: grayscale(100%); opacity: 0.8; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Estilo fixo para o Card que será transformado em Imagem */
+        #renderContainer {
+            position: fixed;
+            top: -9999px;
+            left: -9999px;
+            z-index: -10;
+        }
+        .ticket-design {
+            width: 400px; /* Largura fixa para o JPG */
+            background-color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            position: relative;
+        }
     </style>
 </head>
 <body class="bg-slate-50 font-sans pb-20 overflow-x-hidden">
@@ -22,8 +37,8 @@
     <div class="bg-blue-900 text-white p-6 shadow-lg rounded-b-3xl mb-6 relative overflow-hidden">
         <div class="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cube-coat.png')]"></div>
         <div class="relative z-10 text-center">
-            <h1 class="text-2xl font-black italic tracking-tighter">CASAQR <span class="text-blue-300">EVENTOS</span></h1>
-            <p class="text-blue-200 text-xs mt-1 font-medium uppercase tracking-widest">Portal de Eventos</p>
+            <h1 class="text-2xl font-black italic tracking-tighter">CASAQR<span class="text-blue-300">EVENTOS</span></h1>
+            <p class="text-blue-200 text-xs mt-1 font-medium uppercase tracking-widest">Portal do Aluno</p>
         </div>
     </div>
 
@@ -58,14 +73,14 @@
                         <input type="email" id="inputEmail" placeholder="seuemail@exemplo.com" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm text-slate-700 outline-none focus:ring-2 ring-blue-500">
                     </div>
                     <button onclick="gerarIngresso()" id="btnGerar" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 active:scale-95 transition shadow-lg shadow-blue-200 mt-2">
-                        GARANTIR & BAIXAR
+                        GARANTIR & BAIXAR JPG
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="areaImpressao" class="fixed top-0 left-0 w-[500px] bg-white hidden z-[-1]"></div>
+    <div id="renderContainer"></div>
 
     <script>
         // --- CONFIGURAÇÕES ---
@@ -83,7 +98,7 @@
         emailjs.init("RmJx_2rhtntD90vsH"); 
 
         let eventoSelecionado = null;
-        let limiteIngressosEvento = 1; // Padrão
+        let limiteIngressosEvento = 1;
         let dadosAlunoEncontrado = null; 
 
         // --- CARREGAR EVENTOS ---
@@ -98,7 +113,6 @@
                 const evento = childSnapshot.val();
                 const key = childSnapshot.key;
                 const isLocked = evento.liberado === false;
-                // Lê o limite definido no Admin ou usa 1
                 const limite = evento.limit_ingressos || 1; 
                 
                 let botaoHtml = "";
@@ -136,11 +150,7 @@
             limiteIngressosEvento = parseInt(limite) || 1;
             
             document.getElementById('mdEvento').innerText = nome;
-            
-            // Atualiza texto informativo
-            const textoQtd = limiteIngressosEvento > 1 
-                ? `Você receberá ${limiteIngressosEvento} ingressos` 
-                : `1 Ingresso por aluno`;
+            const textoQtd = limiteIngressosEvento > 1 ? `Você receberá ${limiteIngressosEvento} ingressos` : `1 Ingresso por aluno`;
             document.getElementById('mdQtdInfo').innerText = textoQtd;
 
             document.getElementById('modalIngresso').classList.remove('hidden');
@@ -191,7 +201,7 @@
             btn.disabled = true;
 
             try {
-                // 1. Validação de Segurança do Aluno
+                // 1. Validação
                 if (!dadosAlunoEncontrado) {
                     const snapCheck = await db.ref('alunos_db/'+mat).once('value');
                     if(snapCheck.exists()) {
@@ -203,7 +213,6 @@
                     }
                 }
 
-                // 2. Verificar Duplicidade
                 const checkSnap = await db.ref('ingressos').orderByChild('matricula').equalTo(mat).once('value');
                 let jaTem = false;
                 if(checkSnap.exists()) {
@@ -215,19 +224,20 @@
                     fecharModal(); restaurarBotao(btn, textoOriginal); return;
                 }
 
-                // 3. Gerar Ingressos (LOOP Baseado no Limite)
+                // 2. Loop para Gerar e Baixar JPGs
                 const baseId = `${mat}-${Date.now().toString().slice(-6)}`;
                 let codigosGerados = [];
-
-                // Prepara a área de impressão
-                const printContainer = document.getElementById('areaImpressao');
-                printContainer.innerHTML = ''; // Limpa anterior
+                const renderContainer = document.getElementById('renderContainer');
+                
+                // Exibe alerta inicial
+                const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+                Toast.fire({ icon: 'success', title: 'Gerando imagens...' });
 
                 for (let i = 1; i <= limiteIngressosEvento; i++) {
                     const idIngresso = `${baseId}-${i}`;
                     codigosGerados.push(idIngresso);
 
-                    // Salva no Firebase
+                    // Salva no DB
                     await db.ref('ingressos/' + idIngresso).set({
                         aluno: dadosAlunoEncontrado.nome,
                         turma: dadosAlunoEncontrado.turma,
@@ -240,77 +250,86 @@
                         data: new Date().toISOString()
                     });
 
-                    // Cria o visual do ingresso para o PDF
-                    // Este HTML é o que vai aparecer no PDF baixado
-                    const ticketHTML = `
-                        <div style="border: 2px dashed #1e3a8a; padding: 20px; margin-bottom: 20px; border-radius: 15px; font-family: sans-serif; page-break-inside: avoid;">
-                            <div style="background: #1e3a8a; color: white; padding: 10px; border-radius: 8px 8px 0 0; text-align: center;">
-                                <h2 style="margin:0; font-size: 18px;">${eventoSelecionado}</h2>
-                                <p style="margin:0; font-size: 12px;">ESCOLA PRO EVENTOS</p>
+                    // Cria o HTML do Ticket para ser fotografado
+                    // Note que este HTML é estilizado especificamente para virar imagem (tamanho fixo)
+                    const htmlTicket = `
+                        <div class="ticket-design" style="padding: 20px; border: 2px solid #1e40af; border-radius: 15px; background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);">
+                            
+                            <div style="background: #1e3a8a; color: white; padding: 15px; border-radius: 10px 10px 0 0; text-align: center;">
+                                <h1 style="margin:0; font-size: 22px; font-weight: 900; text-transform: uppercase;">${eventoSelecionado}</h1>
+                                <p style="margin:0; font-size: 10px; letter-spacing: 2px;">ESCOLAPRO EVENTOS</p>
                             </div>
-                            <div style="padding: 15px; background: #f8fafc;">
-                                <p><strong>Aluno:</strong> ${dadosAlunoEncontrado.nome}</p>
-                                <p><strong>Turma:</strong> ${dadosAlunoEncontrado.turma}</p>
-                                <p><strong>Responsável:</strong> ${resp}</p>
-                                <hr style="margin: 10px 0; border: 0; border-top: 1px solid #ddd;">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
+
+                            <div style="padding: 20px;">
+                                <div style="margin-bottom: 15px;">
+                                    <p style="font-size: 10px; color: #64748b; font-weight: bold; margin-bottom: 2px;">ALUNO(A)</p>
+                                    <p style="font-size: 18px; font-weight: bold; color: #1e293b; margin: 0; line-height: 1.2;">${dadosAlunoEncontrado.nome}</p>
+                                    <p style="font-size: 12px; color: #475569;">${dadosAlunoEncontrado.turma}</p>
+                                </div>
+
+                                <div style="margin-bottom: 15px;">
+                                    <p style="font-size: 10px; color: #64748b; font-weight: bold; margin-bottom: 2px;">RESPONSÁVEL</p>
+                                    <p style="font-size: 14px; font-weight: 600; color: #1e293b; margin: 0;">${resp}</p>
+                                </div>
+
+                                <div style="border-top: 2px dashed #cbd5e1; margin: 15px 0;"></div>
+
+                                <div style="display: flex; justify-content: space-between; align-items: end;">
                                     <div>
-                                        <p style="font-size: 10px; color: #666;">CÓDIGO DE VALIDAÇÃO</p>
-                                        <p style="font-size: 16px; font-weight: bold; font-family: monospace;">${idIngresso}</p>
+                                        <p style="font-size: 10px; color: #64748b; font-weight: bold;">CÓDIGO DE VALIDAÇÃO</p>
+                                        <p style="font-size: 14px; font-family: monospace; font-weight: bold; background: #e2e8f0; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-top: 4px;">${idIngresso}</p>
                                     </div>
                                     <div style="text-align: right;">
-                                        <span style="background: #22c55e; color: white; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold;">INGRESSO ${i}/${limiteIngressosEvento}</span>
+                                        <div style="background: #22c55e; color: white; padding: 5px 10px; border-radius: 8px; font-size: 12px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                            ${i} / ${limiteIngressosEvento}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+                            <div style="background: #1e3a8a; height: 10px; width: 100%; position: absolute; bottom: 0; left: 0;"></div>
                         </div>
                     `;
-                    printContainer.innerHTML += ticketHTML;
+
+                    renderContainer.innerHTML = htmlTicket;
+
+                    // Converte para Canvas e baixa
+                    // Aguarda 300ms para garantir renderização de fontes
+                    await new Promise(r => setTimeout(r, 300));
+                    
+                    const element = renderContainer.querySelector('.ticket-design');
+                    const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+                    
+                    // Cria link de download
+                    const link = document.createElement('a');
+                    link.download = `Ingresso-${dadosAlunoEncontrado.nome}-${i}.jpg`;
+                    link.href = canvas.toDataURL('image/jpeg', 0.9);
+                    link.click();
+                    
+                    renderContainer.innerHTML = ""; // Limpa para o próximo
                 }
 
-                // 4. Envia Email (apenas um aviso)
+                // 3. Email
                 const templateParams = {
                     nome_aluno: dadosAlunoEncontrado.nome,
                     turma: dadosAlunoEncontrado.turma,
                     nome_responsavel: resp,
                     evento: eventoSelecionado,
-                    codigo_ingresso: codigosGerados.join(', '), // Manda lista de códigos
+                    codigo_ingresso: codigosGerados.join(', '),
                     to_email: email
                 };
+                emailjs.send("service_r1vrjkp", "template_4yvqw5g", templateParams).catch(err => console.error(err));
 
-                emailjs.send("service_r1vrjkp", "template_4yvqw5g", templateParams)
-                    .catch((err) => console.error("Erro email", err));
-
-                // 5. Download Automático do PDF
-                // Mostra um toast enquanto baixa
-                const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
-                Toast.fire({ icon: 'success', title: 'Gerando PDF...' });
-
-                const elementoParaImprimir = document.getElementById('areaImpressao');
-                const opt = {
-                    margin:       10,
-                    filename:     `Ingressos-${dadosAlunoEncontrado.nome}.pdf`,
-                    image:        { type: 'jpeg', quality: 0.98 },
-                    html2canvas:  { scale: 2 },
-                    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-                };
-
-                // Aguarda um pouco para o HTML renderizar e baixa
-                setTimeout(() => {
-                    html2pdf().set(opt).from(elementoParaImprimir).save().then(() => {
-                        fecharModal();
-                        Swal.fire({ 
-                            icon: 'success', 
-                            title: 'Sucesso!', 
-                            html: `Foram gerados <b>${limiteIngressosEvento} ingressos</b>.<br>O download começou automaticamente!`,
-                            confirmButtonColor: '#10B981'
-                        });
-                    });
-                }, 500);
+                fecharModal();
+                Swal.fire({ 
+                    icon: 'success', 
+                    title: 'Pronto!', 
+                    html: `Geramos <b>${limiteIngressosEvento} imagem(ns)</b>.<br>Verifique seus downloads!`,
+                    confirmButtonColor: '#10B981'
+                });
 
             } catch (error) {
                 console.error("Erro:", error);
-                Swal.fire({ icon: 'error', title: 'Erro', text: 'Erro ao processar.' });
+                Swal.fire({ icon: 'error', title: 'Erro', text: 'Erro ao gerar imagem.' });
             }
             restaurarBotao(btn, textoOriginal);
         }
