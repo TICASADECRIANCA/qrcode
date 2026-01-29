@@ -85,25 +85,33 @@
             // Pausa para não ler o mesmo código 10 vezes seguidas
             html5QrCode.pause();
             
-            // O texto chega como "MATRICULA-ID" (Ex: 2002-1)
+            // O texto chega como "MATRICULA-ID"
             validarNoBanco(decodedText);
         }
 
+        // --- LÓGICA CORRIGIDA AQUI ---
         function validarNoBanco(idUnico) {
             db.ref('ingressos/' + idUnico).once('value', (snap) => {
                 if (snap.exists()) {
                     const dados = snap.val();
                     
-                    if (dados.utilizado) {
+                    // Verifica se já tem o status 'validado' (que o Admin espera)
+                    if (dados.status === 'validado') {
                         // JÁ USADO
-                        mostrarResultado("ERRO", dados.aluno, "JÁ VALIDADO ÀS " + (dados.horaEntrada || "??:??"), "bg-red-600");
+                        // Pega a hora formatada para exibir no erro
+                        const horaAntiga = dados.horario_validacao ? new Date(dados.horario_validacao).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '??:??';
+                        
+                        mostrarResultado("ERRO", dados.aluno, "JÁ VALIDADO ÀS " + horaAntiga, "bg-red-600");
                         playAudio('error');
                     } else {
                         // SUCESSO - LIBERAR
-                        const hora = new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-                        db.ref('ingressos/' + idUnico).update({ utilizado: true, horaEntrada: hora });
+                        // Grava 'status: validado' e a data completa para o Admin ler
+                        db.ref('ingressos/' + idUnico).update({ 
+                            status: 'validado', 
+                            horario_validacao: new Date().toISOString() // Data formato ISO para o Admin
+                        });
                         
-                        mostrarResultado("OK", dados.aluno, `ACESSO LIBERADO (Item ${idUnico.split('-')[1]})`, "bg-green-600");
+                        mostrarResultado("OK", dados.aluno, `ACESSO LIBERADO (Final ${idUnico.split('-').pop()})`, "bg-green-600");
                         playAudio('success');
                     }
                 } else {
@@ -142,5 +150,3 @@
     </script>
 </body>
 </html>
-
-
