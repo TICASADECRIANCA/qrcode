@@ -10,193 +10,112 @@
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    
-    <style>
-        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #2563eb; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    </style>
 </head>
-<body class="bg-gray-100 text-gray-800">
-
+<body class="bg-gray-100">
     <div id="overlay" class="hidden fixed inset-0 bg-white/95 z-[100] flex flex-col items-center justify-center">
-        <div id="loaderIcon" class="loader mb-4"></div>
-        <div id="successCheck" class="hidden text-green-500 text-6xl mb-4">✓</div>
-        <h3 id="statusMsg" class="text-xl font-bold">Processando...</h3>
-        <p id="subStatusMsg" class="text-gray-500 text-center px-4 mt-2 italic">Gerando ingressos e preparando e-mail.</p>
+        <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <h3 id="statusMsg" class="text-xl font-bold italic">Gerando seus Ingressos...</h3>
     </div>
 
-    <nav class="bg-white p-4 shadow-sm flex flex-wrap justify-between items-center px-4 md:px-8 border-b">
-        <div class="text-2xl font-black text-blue-600 tracking-tighter">ESCOLAPRO</div>
-        <div class="flex items-center gap-2 mt-2 md:mt-0">
-            <a href="validar.html" class="bg-slate-800 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase hover:bg-black transition">📷 Portaria</a>
-            <a href="admin.html" class="bg-gray-100 text-gray-600 px-4 py-2 rounded-xl text-xs font-bold uppercase">Lista</a>
-            <a href="cadastrar_evento.html" class="bg-blue-100 text-blue-600 px-4 py-2 rounded-xl text-xs font-bold uppercase">⚙️ Eventos</a>
+    <nav class="bg-white p-4 shadow-sm flex justify-between items-center px-8 border-b">
+        <div class="text-2xl font-black text-blue-600 italic">ESCOLAPRO</div>
+        <div class="flex gap-2">
+            <a href="validar.html" class="bg-black text-white px-4 py-2 rounded-xl text-[10px] font-bold uppercase">📷 Portaria</a>
+            <a href="cadastrar_evento.html" class="bg-blue-100 text-blue-600 px-4 py-2 rounded-xl text-[10px] font-bold uppercase">⚙️ Painel</a>
         </div>
     </nav>
 
-    <main class="p-8 max-w-7xl mx-auto">
-        <h2 class="text-3xl font-bold mb-8">Eventos Disponíveis</h2>
-        <div id="listaEventos" class="grid grid-cols-1 md:grid-cols-3 gap-8"></div>
-    </main>
+    <div id="listaEventos" class="p-8 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-7xl mx-auto"></div>
 
-    <div id="modalIngresso" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-[2.5rem] p-8 max-w-lg w-full shadow-2xl overflow-y-auto max-h-[90vh]">
-            <h3 id="nomeEventoModal" class="text-2xl font-black mb-4 tracking-tight text-blue-600">Solicitar Ingresso</h3>
-            <div class="space-y-4">
-                <input type="text" id="pai" placeholder="Nome do Responsável" class="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 ring-blue-500 border-none">
-                <input type="email" id="emailPai" placeholder="E-mail para recebimento" class="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 ring-blue-500 border-none">
-                <div id="containerFilhos" class="space-y-4 pt-4 border-t">
-                    <div class="p-4 bg-blue-50 rounded-2xl border border-blue-100">
-                        <input type="text" placeholder="Nome do Aluno" class="nome-aluno w-full bg-transparent font-bold outline-none">
-                        <input type="number" placeholder="Nº Matrícula" class="mat-aluno w-full bg-transparent outline-none border-t border-blue-200 mt-2 pt-2 text-sm">
-                    </div>
+    <div id="modalIngresso" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-[2.5rem] p-8 max-w-lg w-full">
+            <h3 id="nomeEvTitle" class="text-2xl font-black mb-4 uppercase"></h3>
+            <input type="text" id="pai" placeholder="Responsável" class="w-full p-4 bg-gray-50 rounded-2xl mb-3 outline-none border">
+            <input type="email" id="email" placeholder="E-mail" class="w-full p-4 bg-gray-50 rounded-2xl mb-3 outline-none border">
+            <div id="filhos" class="space-y-2 mb-4">
+                <div class="p-4 bg-blue-50 rounded-2xl border">
+                    <input type="text" placeholder="Nome do Aluno" class="n-aluno w-full bg-transparent font-bold outline-none">
+                    <input type="number" placeholder="Matrícula" class="m-aluno w-full bg-transparent border-t mt-2 pt-2 outline-none">
                 </div>
-                <button onclick="adicionarFilho()" class="text-blue-600 font-bold text-xs w-full py-2 uppercase hover:bg-blue-50 rounded-xl transition">+ Adicionar Aluno</button>
-                <button onclick="processarGeracao()" class="w-full bg-blue-600 text-white py-4 rounded-3xl font-bold text-lg shadow-lg hover:bg-blue-700 transition-all">GERAR MEU INGRESSO PDF</button>
-                <button onclick="fecharModal()" class="w-full text-gray-400 py-2 font-bold uppercase text-xs">Cancelar</button>
             </div>
+            <button onclick="processar()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg">GERAR INGRESSOS AGORA</button>
+            <button onclick="location.reload()" class="w-full py-2 text-gray-400 text-xs mt-2">CANCELAR</button>
         </div>
     </div>
 
     <div id="qrcode-temp" style="display:none"></div>
 
     <script>
-        // CONFIGURAÇÃO FIREBASE
-        const firebaseConfig = {
-            apiKey: "AIzaSyA-F2p-sNG9ED7rpZ8uZ5_OxyiggdOfvfc",
-            authDomain: "ingressoscdc.firebaseapp.com",
-            databaseURL: "https://ingressoscdc-default-rtdb.firebaseio.com",
-            projectId: "ingressoscdc",
-            storageBucket: "ingressoscdc.firebasestorage.app",
-            messagingSenderId: "388023812522",
-            appId: "1:388023812522:web:1756fb37294146c0e5ebd3"
-        };
+        const firebaseConfig = { apiKey: "AIzaSyA-F2p-sNG9ED7rpZ8uZ5_OxyiggdOfvfc", authDomain: "ingressoscdc.firebaseapp.com", databaseURL: "https://ingressoscdc-default-rtdb.firebaseio.com", projectId: "ingressoscdc", storageBucket: "ingressoscdc.firebasestorage.app", messagingSenderId: "388023812522", appId: "1:388023812522:web:1756fb37294146c0e5ebd3" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         emailjs.init("RmJx_2rhtntD90vsH");
 
-        let eventoAtual = "";
+        let currentEv = null;
 
-        // CARREGA EVENTOS DO BANCO
-        db.ref('eventos').on('value', (snap) => {
-            const container = document.getElementById('listaEventos');
-            container.innerHTML = "";
-            snap.forEach((item) => {
-                const ev = item.val();
-                container.innerHTML += `
-                    <div class="bg-white rounded-[2rem] shadow-sm border overflow-hidden hover:shadow-md transition">
-                        <div class="h-40 bg-cover bg-center" style="background-image: url('${ev.imagem || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800'}')"></div>
-                        <div class="p-6">
-                            <h3 class="text-xl font-bold text-gray-800">${ev.nome}</h3>
-                            <p class="text-blue-600 font-bold mb-4 text-sm">${ev.data}</p>
-                            <button onclick="abrirModal('${ev.nome}')" class="w-full bg-blue-600 text-white py-3 rounded-2xl font-bold hover:bg-blue-700 transition">Solicitar</button>
-                        </div>
-                    </div>`;
+        db.ref('eventos').on('value', snap => {
+            const cont = document.getElementById('listaEventos'); cont.innerHTML = "";
+            snap.forEach(i => {
+                const ev = i.val();
+                cont.innerHTML += `<div class="bg-white rounded-[2rem] overflow-hidden shadow-sm border p-6 text-center">
+                    <h3 class="text-xl font-black mb-2">${ev.nome}</h3>
+                    <button onclick="openM('${ev.nome}', '${i.key}')" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold">Solicitar</button>
+                </div>`;
             });
         });
 
-        function abrirModal(n) { eventoAtual = n; document.getElementById('nomeEventoModal').innerText = n; document.getElementById('modalIngresso').classList.remove('hidden'); }
-        function fecharModal() { document.getElementById('modalIngresso').classList.add('hidden'); }
-        function adicionarFilho() {
-            const div = document.createElement('div');
-            div.className = "p-4 bg-blue-50 rounded-2xl border border-blue-100";
-            div.innerHTML = `<input type="text" placeholder="Nome do Aluno" class="nome-aluno w-full bg-transparent font-bold outline-none"><input type="number" placeholder="Nº Matrícula" class="mat-aluno w-full bg-transparent outline-none border-t border-blue-200 mt-2 pt-2 text-sm">`;
-            document.getElementById('containerFilhos').appendChild(div);
+        async function openM(nome, key) {
+            currentEv = (await db.ref('eventos/'+key).once('value')).val();
+            document.getElementById('nomeEvTitle').innerText = nome;
+            document.getElementById('modalIngresso').classList.remove('hidden');
         }
 
-        async function processarGeracao() {
+        async function processar() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             const pai = document.getElementById('pai').value;
-            const email = document.getElementById('emailPai').value;
-            const nomes = document.querySelectorAll('.nome-aluno');
-            const mats = document.querySelectorAll('.mat-aluno');
-
-            if(!pai || !email) return alert("Por favor, preencha todos os campos!");
+            const mail = document.getElementById('email').value;
+            const nomes = document.querySelectorAll('.n-aluno');
+            const mats = document.querySelectorAll('.m-aluno');
 
             document.getElementById('modalIngresso').classList.add('hidden');
             document.getElementById('overlay').classList.remove('hidden');
 
-            try {
-                let alunosNomes = [];
+            for(let i=0; i<nomes.length; i++) {
+                const n = nomes[i].value; const m = mats[i].value;
+                if(!n || !m) continue;
 
-                for(let i=0; i<nomes.length; i++) {
-                    const n = nomes[i].value;
-                    const m = mats[i].value;
-                    if(!n || !m) continue;
-                    alunosNomes.push(n);
-
-                    if(i > 0) doc.addPage();
+                for(let j=1; j <= currentEv.qtd; j++) {
+                    if(i > 0 || j > 1) doc.addPage();
                     
-                    // DESIGN DO INGRESSO
-                    doc.setFillColor(37, 99, 235);
-                    doc.rect(0, 0, 210, 40, 'F');
-                    doc.setTextColor(255, 255, 255);
-                    doc.setFontSize(22);
-                    doc.text("ESCOLAPRO", 20, 25);
-                    doc.setFontSize(10);
-                    doc.text("COMPROVANTE DE ENTRADA DIGITAL", 20, 32);
-
-                    doc.setTextColor(0,0,0);
-                    doc.setFontSize(16);
-                    doc.text(eventoAtual.toUpperCase(), 20, 60);
-                    doc.setFontSize(11);
-                    doc.text(`ALUNO: ${n}`, 20, 80);
-                    doc.text(`MATRÍCULA: ${m}`, 20, 88);
-                    doc.text(`RESPONSÁVEL: ${pai}`, 20, 96);
-                    doc.text(`EMITIDO EM: ${new Date().toLocaleString()}`, 20, 104);
-
-                    // GERAR QR CODES
-                    for(let j=1; j<=3; j++) {
-                        const id = `TKT-${m}-${j}`;
-                        const qrDiv = document.getElementById('qrcode-temp');
-                        qrDiv.innerHTML = "";
-                        
-                        // Gera o QR localmente como imagem
-                        new QRCode(qrDiv, { text: id, width: 256, height: 256 });
-                        await new Promise(r => setTimeout(r, 200));
-                        
-                        const canvas = qrDiv.querySelector('canvas');
-                        const qrImg = canvas.toDataURL("image/png");
-
-                        doc.addImage(qrImg, 'PNG', 20 + ((j-1) * 60), 125, 40, 40);
-                        doc.setFontSize(7);
-                        doc.text(id, 20 + ((j-1) * 60) + 20, 170, {align:'center'});
+                    // Fundo dinâmico
+                    if(currentEv.bgPdf) {
+                        try {
+                            const img = new Image(); img.src = currentEv.bgPdf; img.crossOrigin = "Anonymous";
+                            await new Promise(r => { img.onload = r; img.onerror = r; });
+                            doc.addImage(img, 'JPEG', 0, 0, 210, 297);
+                        } catch(e) {}
                     }
 
-                    // SALVA NO FIREBASE
-                    await db.ref('ingressos/' + m).set({ 
-                        aluno: n, 
-                        responsavel: pai, 
-                        evento: eventoAtual, 
-                        utilizado: false, 
-                        dataGeracao: new Date().toLocaleString() 
-                    });
+                    const idUnico = `${m}-${j}`;
+                    doc.setTextColor(0,0,0);
+                    doc.setFontSize(20);
+                    doc.text(n.toUpperCase(), 105, 80, {align: 'center'});
+                    doc.setFontSize(10);
+                    doc.text(`INGRESSO ${j} DE ${currentEv.qtd} | ID: ${idUnico}`, 105, 90, {align: 'center'});
+
+                    // QR Code
+                    const qrDiv = document.getElementById('qrcode-temp'); qrDiv.innerHTML = "";
+                    new QRCode(qrDiv, { text: idUnico, width: 256, height: 256 });
+                    await new Promise(r => setTimeout(r, 150));
+                    doc.addImage(qrDiv.querySelector('canvas').toDataURL("image/png"), 'PNG', 75, 120, 60, 60);
+
+                    // Salva individualmente
+                    await db.ref('ingressos/' + idUnico).set({ aluno: n, matricula: m, responsavel: pai, evento: currentEv.nome, utilizado: false });
                 }
-
-                // DOWNLOAD DO PDF
-                doc.save(`Ingressos_ESCOLAPRO_${pai}.pdf`);
-
-                // ENVIO DO EMAIL (Sem QR Code direto, pois o PDF é o anexo oficial que ele acabou de baixar)
-                await emailjs.send("service_r1vrjkp", "template_4yvqw5g", {
-                    nome_responsavel: pai,
-                    to_email: email,
-                    evento: eventoAtual,
-                    alunos: alunosNomes.join(", ")
-                });
-
-                // FINALIZAÇÃO
-                document.getElementById('loaderIcon').classList.add('hidden');
-                document.getElementById('successCheck').classList.remove('hidden');
-                document.getElementById('statusMsg').innerText = "INGRESSOS GERADOS!";
-                document.getElementById('subStatusMsg').innerText = "O PDF com os QR CODES foi baixado. Confira seu e-mail para confirmação.";
-                setTimeout(() => location.reload(), 5000);
-
-            } catch (err) {
-                console.error(err);
-                alert("Erro ao processar. Tente novamente.");
-                document.getElementById('overlay').classList.add('hidden');
             }
+            doc.save(`Ingressos_${pai}.pdf`);
+            location.reload();
         }
     </script>
 </body>
