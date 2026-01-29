@@ -8,9 +8,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 </head>
 <body class="bg-gray-100 p-8">
-
     <div id="login" class="max-w-md mx-auto bg-white p-10 rounded-[2.5rem] shadow-2xl mt-20">
-        <h2 class="text-2xl font-black mb-6 text-center">Área de Configuração</h2>
+        <h2 class="text-2xl font-black mb-6 text-center">Configuração de Evento</h2>
         <input type="password" id="pw" placeholder="Senha Admin" class="w-full p-4 bg-gray-50 rounded-2xl mb-4 outline-none border-2 border-transparent focus:border-blue-500">
         <button onclick="check()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold uppercase">Entrar</button>
     </div>
@@ -18,60 +17,45 @@
     <div id="painel" class="hidden max-w-4xl mx-auto">
         <div class="bg-white p-8 rounded-[2.5rem] shadow-xl mb-8">
             <div class="flex justify-between items-center mb-8">
-                <h1 class="text-3xl font-black italic">Criar Novo Evento</h1>
+                <h1 class="text-3xl font-black">Novo Evento</h1>
                 <a href="index.html" class="text-blue-600 font-bold underline">Voltar ao Site</a>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input type="text" id="n" placeholder="Nome do Evento" class="p-4 bg-gray-50 rounded-2xl outline-none">
-                <input type="text" id="d" placeholder="Data (ex: 20 de Dezembro)" class="p-4 bg-gray-50 rounded-2xl outline-none">
-                <input type="text" id="i" placeholder="URL da Imagem de Capa" class="md:col-span-2 p-4 bg-gray-50 rounded-2xl outline-none">
-                <button onclick="add()" class="md:col-span-2 bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg hover:bg-blue-700 transition">Publicar Evento</button>
+                <input type="text" id="n" placeholder="Nome do Evento" class="p-4 bg-gray-50 rounded-2xl outline-none border">
+                <input type="text" id="d" placeholder="Data (ex: 15/06 às 19h)" class="p-4 bg-gray-50 rounded-2xl outline-none border">
+                <input type="number" id="qtd" placeholder="Qtd Ingressos por Aluno" class="p-4 bg-gray-50 rounded-2xl outline-none border">
+                <input type="text" id="imgPortal" placeholder="Link da Foto no Site" class="p-4 bg-gray-50 rounded-2xl outline-none border">
+                <input type="text" id="bgPdf" placeholder="Link do Fundo do PDF (A4)" class="md:col-span-2 p-4 bg-gray-50 rounded-2xl outline-none border">
+                <button onclick="add()" class="md:col-span-2 bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg">Publicar Evento</button>
             </div>
         </div>
-
-        <div class="bg-white p-8 rounded-[2.5rem] shadow-xl">
-            <h2 class="font-bold mb-4 uppercase text-gray-400">Eventos Ativos</h2>
-            <div id="lista" class="space-y-3"></div>
-        </div>
+        <div id="lista" class="space-y-3"></div>
     </div>
 
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyA-F2p-sNG9ED7rpZ8uZ5_OxyiggdOfvfc",
-            authDomain: "ingressoscdc.firebaseapp.com",
-            databaseURL: "https://ingressoscdc-default-rtdb.firebaseio.com",
-            projectId: "ingressoscdc",
-            storageBucket: "ingressoscdc.firebasestorage.app",
-            messagingSenderId: "388023812522",
-            appId: "1:388023812522:web:1756fb37294146c0e5ebd3"
-        };
+        const firebaseConfig = { apiKey: "AIzaSyA-F2p-sNG9ED7rpZ8uZ5_OxyiggdOfvfc", authDomain: "ingressoscdc.firebaseapp.com", databaseURL: "https://ingressoscdc-default-rtdb.firebaseio.com", projectId: "ingressoscdc", storageBucket: "ingressoscdc.firebasestorage.app", messagingSenderId: "388023812522", appId: "1:388023812522:web:1756fb37294146c0e5ebd3" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        function check() {
-            if(document.getElementById('pw').value === "1992") {
-                document.getElementById('login').classList.add('hidden');
-                document.getElementById('painel').classList.remove('hidden');
-                load();
-            } else { alert("Senha incorreta"); }
-        }
+        function check() { if(document.getElementById('pw').value === "123456") { document.getElementById('login').classList.add('hidden'); document.getElementById('painel').classList.remove('hidden'); load(); } else { alert("Senha incorreta"); } }
 
         function add() {
             const nome = document.getElementById('n').value;
             const data = document.getElementById('d').value;
-            const imagem = document.getElementById('i').value;
-            if(!nome || !data) return alert("Campos vazios");
-            db.ref('eventos/' + Date.now()).set({nome, data, imagem}).then(() => location.reload());
+            const qtd = document.getElementById('qtd').value;
+            const imagem = document.getElementById('imgPortal').value;
+            const bgPdf = document.getElementById('bgPdf').value;
+            if(!nome || !qtd) return alert("Preencha Nome e Quantidade");
+            db.ref('eventos/' + Date.now()).set({nome, data, qtd, imagem, bgPdf}).then(() => location.reload());
         }
 
         function load() {
             db.ref('eventos').on('value', snap => {
-                const l = document.getElementById('lista');
-                l.innerHTML = "";
+                const l = document.getElementById('lista'); l.innerHTML = "";
                 snap.forEach(item => {
-                    l.innerHTML += `<div class="flex justify-between p-4 bg-gray-50 rounded-2xl items-center">
-                        <span class="font-bold">${item.val().nome}</span>
-                        <button onclick="del('${item.key}')" class="text-red-500 font-bold uppercase text-xs">Excluir</button>
+                    l.innerHTML += `<div class="flex justify-between p-4 bg-white rounded-2xl shadow-sm items-center">
+                        <span class="font-bold">${item.val().nome} (${item.val().qtd} un)</span>
+                        <button onclick="del('${item.key}')" class="text-red-500 font-bold">Excluir</button>
                     </div>`;
                 });
             });
