@@ -5,8 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal de Ingressos - ESCOLAPRO</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -16,8 +18,8 @@
     <div id="overlay" class="hidden fixed inset-0 bg-white/95 z-[100] flex flex-col items-center justify-center p-4">
         <div id="loader" class="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-6"></div>
         <div id="successIcon" class="hidden text-6xl mb-4">✅</div>
-        <h3 id="statusMsg" class="text-2xl font-black text-slate-800 text-center">Gerando seus Ingressos...</h3>
-        <p id="subMsg" class="text-gray-500 mt-2 text-center">Por favor, não feche a página.</p>
+        <h3 id="statusMsg" class="text-2xl font-black text-slate-800 text-center">Conectando...</h3>
+        <p id="subMsg" class="text-gray-500 mt-2 text-center">Aguarde um momento.</p>
     </div>
 
     <nav class="bg-white p-4 shadow-sm flex flex-wrap justify-between items-center px-4 md:px-8 border-b">
@@ -28,7 +30,9 @@
         </div>
     </nav>
 
-    <div id="listaEventos" class="p-8 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-7xl mx-auto"></div>
+    <div id="listaEventos" class="p-8 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-7xl mx-auto">
+        <p class="text-gray-500 col-span-3 text-center animate-pulse">Carregando eventos...</p>
+    </div>
 
     <div id="modalIngresso" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-[2.5rem] p-8 max-w-lg w-full shadow-2xl overflow-y-auto max-h-[90vh]">
@@ -65,16 +69,34 @@
     <div id="qrcode-temp" style="display:none"></div>
 
     <script>
-        const firebaseConfig = { apiKey: "AIzaSyBFDlEOhuUerWjSfK_mPVxoj5sGbSDhe9k", authDomain: "ingressoscdc-9ce88.firebaseapp.com", databaseURL: "https://ingressoscdc-9ce88-default-rtdb.firebaseio.com", projectId: "ingressoscdc-9ce88", storageBucket: "ingressoscdc-9ce88.firebasestorage.app", messagingSenderId: "976193676383", appId: "1:976193676383:web:8f141a1bd705f8bc0ae7ea" };
+        // --- CONFIGURAÇÃO ATUALIZADA (NOVA) ---
+        const firebaseConfig = { 
+            apiKey: "AIzaSyBFDlEOhuUerWjSfK_mPVxoj5sGbSDhe9k", 
+            authDomain: "ingressoscdc-9ce88.firebaseapp.com", 
+            databaseURL: "https://ingressoscdc-9ce88-default-rtdb.firebaseio.com", 
+            projectId: "ingressoscdc-9ce88", 
+            storageBucket: "ingressoscdc-9ce88.firebasestorage.app", 
+            messagingSenderId: "976193676383", 
+            appId: "1:976193676383:web:8f141a1bd705f8bc0ae7ea" 
+        };
+        
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         emailjs.init("RmJx_2rhtntD90vsH");
 
         let currentEv = null;
 
-        // CARREGA EVENTOS
+        // --- CARREGA EVENTOS ---
+        // Se não aparecer nada, é porque o banco 'ingressoscdc-9ce88' está vazio
         db.ref('eventos').on('value', snap => {
-            const cont = document.getElementById('listaEventos'); cont.innerHTML = "";
+            const cont = document.getElementById('listaEventos'); 
+            cont.innerHTML = "";
+            
+            if(!snap.exists()){
+                cont.innerHTML = `<p class="col-span-3 text-center text-gray-400 mt-10">Nenhum evento encontrado no banco novo.<br>Cadastre um evento na página de Admin.</p>`;
+                return;
+            }
+
             snap.forEach(i => {
                 const ev = i.val();
                 cont.innerHTML += `
@@ -87,6 +109,9 @@
                     </div>
                 </div>`;
             });
+        }, error => {
+            console.error(error);
+            alert("Erro ao ler eventos: Verifique as Regras do Firebase.");
         });
 
         async function openM(key) {
@@ -110,9 +135,9 @@
 
             if(!pai || !mail) return alert("Preencha Responsável e E-mail!");
 
-            // UI Feedback
             document.getElementById('modalIngresso').classList.add('hidden');
             document.getElementById('overlay').classList.remove('hidden');
+            document.getElementById('statusMsg').innerText = "Iniciando...";
 
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
@@ -124,32 +149,30 @@
                     if(!n || !m) continue;
                     alunosList.push(n);
 
-                    // Pega quantidade definida no evento ou usa 1 como padrão
                     const qtd = parseInt(currentEv.qtd) || 1;
 
                     for(let j=1; j <= qtd; j++) {
                         if(i > 0 || j > 1) doc.addPage();
 
-                        // 1. TENTA CARREGAR FUNDO PERSONALIZADO
+                        // 1. FUNDO
                         if(currentEv.bgPdf) {
                             try {
                                 const img = new Image(); img.src = currentEv.bgPdf; img.crossOrigin = "Anonymous";
-                                await new Promise((resolve, reject) => { 
+                                await new Promise((resolve) => { 
                                     img.onload = resolve; 
-                                    img.onerror = resolve; // Continua mesmo se falhar
-                                    setTimeout(resolve, 3000); // Timeout segurança
+                                    img.onerror = resolve; 
+                                    setTimeout(resolve, 2000); // Força continuar após 2s
                                 });
                                 doc.addImage(img, 'JPEG', 0, 0, 210, 297);
-                            } catch(e) { console.log("Sem fundo ou erro loading"); }
+                            } catch(e) { console.log("Erro imagem fundo"); }
                         }
 
-                        // 2. CONTEÚDO DO PDF
+                        // 2. TEXTOS
                         const idUnico = `${m}-${j}`;
                         
-                        // Ajuste de cor para texto ficar visível (Caixa branca de fundo para o texto)
                         if(currentEv.bgPdf) {
                             doc.setFillColor(255, 255, 255);
-                            doc.roundedRect(60, 70, 90, 100, 5, 5, 'F'); // Caixa atrás do QR
+                            doc.roundedRect(60, 70, 90, 100, 5, 5, 'F');
                         }
 
                         doc.setTextColor(0,0,0);
@@ -160,51 +183,52 @@
                         doc.text(`INGRESSO ${j} / ${qtd}`, 105, 92, {align: 'center'});
                         doc.text(`ID: ${idUnico}`, 105, 97, {align: 'center'});
 
-                        // 3. GERAR QR CODE (Garantido)
+                        // 3. QR CODE
                         const qrDiv = document.getElementById('qrcode-temp'); qrDiv.innerHTML = "";
                         new QRCode(qrDiv, { text: idUnico, width: 256, height: 256 });
-                        await new Promise(r => setTimeout(r, 200)); // Espera renderizar
+                        await new Promise(r => setTimeout(r, 200));
                         const qrImg = qrDiv.querySelector('canvas').toDataURL("image/png");
                         doc.addImage(qrImg, 'PNG', 75, 110, 60, 60);
 
-                        // 4. SALVAR NO FIREBASE (Importante para o Validador funcionar)
+                        // 4. SALVAR NO FIREBASE
+                        document.getElementById('statusMsg').innerText = "Salvando no sistema...";
                         await db.ref('ingressos/' + idUnico).set({ 
                             aluno: n, 
                             matricula: m, 
                             responsavel: pai, 
                             evento: currentEv.nome, 
-                            utilizado: false 
+                            utilizado: false,
+                            dataGeracao: new Date().toISOString()
                         });
                     }
                 }
 
-                // 5. BAIXA O PDF
+                // 5. DOWNLOAD PDF
                 document.getElementById('statusMsg').innerText = "Baixando PDF...";
                 doc.save(`Ingressos_${pai.replace(/ /g,'_')}.pdf`);
 
-                // 6. ENVIA E-MAIL (Apenas notificação)
-                document.getElementById('statusMsg').innerText = "Enviando Confirmação...";
+                // 6. ENVIAR EMAIL
+                document.getElementById('statusMsg').innerText = "Enviando E-mail...";
                 await emailjs.send("service_r1vrjkp", "template_4yvqw5g", {
                     nome_responsavel: pai,
                     to_email: mail,
                     evento: currentEv.nome,
-                    message: `Ingressos gerados para: ${alunosList.join(", ")}. O arquivo PDF foi baixado no seu dispositivo.`
+                    message: `Seus ingressos (${alunosList.join(", ")}) foram gerados com sucesso!`
                 });
 
-                // FIM
                 document.getElementById('loader').classList.add('hidden');
                 document.getElementById('successIcon').classList.remove('hidden');
-                document.getElementById('statusMsg').innerText = "Tudo Pronto!";
-                document.getElementById('subMsg').innerText = "Verifique sua pasta de Downloads.";
-                setTimeout(() => location.reload(), 5000);
+                document.getElementById('statusMsg').innerText = "Sucesso!";
+                document.getElementById('subMsg').innerText = "PDF Baixado.";
+                
+                setTimeout(() => location.reload(), 4000);
 
             } catch(e) {
                 console.error(e);
-                alert("Ocorreu um erro. Verifique a internet e tente novamente.");
+                alert("Erro: " + e.message + "\n\nIMPORTANTE: Verifique se as Regras do Firebase (Rules) estão liberadas.");
                 location.reload();
             }
         }
     </script>
 </body>
 </html>
-
