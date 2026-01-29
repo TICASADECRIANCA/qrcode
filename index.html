@@ -3,32 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CASAQR - EVENTOS</title>
+    <title>Ingressos Escola</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
     <style>
         .grayscale-card { filter: grayscale(100%); opacity: 0.8; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* Estilo fixo para o Card que será transformado em Imagem */
+        /* Área oculta de renderização */
         #renderContainer {
             position: fixed;
             top: -9999px;
             left: -9999px;
             z-index: -10;
-        }
-        .ticket-design {
-            width: 400px; /* Largura fixa para o JPG */
-            background-color: #ffffff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overflow: hidden;
-            position: relative;
         }
     </style>
 </head>
@@ -37,7 +31,7 @@
     <div class="bg-blue-900 text-white p-6 shadow-lg rounded-b-3xl mb-6 relative overflow-hidden">
         <div class="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cube-coat.png')]"></div>
         <div class="relative z-10 text-center">
-            <h1 class="text-2xl font-black italic tracking-tighter">CASAQR<span class="text-blue-300">EVENTOS</span></h1>
+            <h1 class="text-2xl font-black italic tracking-tighter">ESCOLAPRO <span class="text-blue-300">EVENTOS</span></h1>
             <p class="text-blue-200 text-xs mt-1 font-medium uppercase tracking-widest">Portal do Aluno</p>
         </div>
     </div>
@@ -55,8 +49,8 @@
             <button onclick="fecharModal()" class="absolute top-4 right-4 bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center font-bold text-gray-500 hover:bg-gray-200 z-10">✕</button>
             <div class="p-6 pt-10 text-center">
                 <div class="mb-2 inline-block p-3 rounded-full bg-blue-50 text-blue-600 text-2xl">🎟️</div>
-                <h3 class="text-xl font-black text-slate-800 mb-1 leading-tight" id="mdEvento">Nome do Evento</h3>
-                <p class="text-xs text-blue-600 bg-blue-50 py-1 px-3 rounded-full inline-block mb-4 font-bold uppercase tracking-wide" id="mdQtdInfo">1 Ingresso por aluno</p>
+                <h3 class="text-xl font-black text-slate-800 mb-1 leading-tight" id="mdEvento">Evento</h3>
+                <p class="text-xs text-blue-600 bg-blue-50 py-1 px-3 rounded-full inline-block mb-4 font-bold uppercase tracking-wide" id="mdQtdInfo">1 Ingresso</p>
                 
                 <div class="space-y-3 text-left">
                     <div>
@@ -73,7 +67,7 @@
                         <input type="email" id="inputEmail" placeholder="seuemail@exemplo.com" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm text-slate-700 outline-none focus:ring-2 ring-blue-500">
                     </div>
                     <button onclick="gerarIngresso()" id="btnGerar" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 active:scale-95 transition shadow-lg shadow-blue-200 mt-2">
-                        GARANTIR & BAIXAR JPG
+                        GARANTIR & BAIXAR
                     </button>
                 </div>
             </div>
@@ -83,7 +77,7 @@
     <div id="renderContainer"></div>
 
     <script>
-        // --- CONFIGURAÇÕES ---
+        // CONFIGURAÇÕES FIREBASE
         const firebaseConfig = { 
             apiKey: "AIzaSyBFDlEOhuUerWjSfK_mPVxoj5sGbSDhe9k", 
             authDomain: "ingressoscdc-9ce88.firebaseapp.com", 
@@ -117,23 +111,20 @@
                 
                 let botaoHtml = "";
                 let estiloCard = "";
-                let statusBadge = "";
 
                 if(isLocked) {
                     botaoHtml = `<button disabled class="w-full bg-slate-100 text-slate-400 py-3 rounded-xl font-bold text-sm cursor-not-allowed flex items-center justify-center gap-2 border border-slate-200">🔒 EM BREVE</button>`;
                     estiloCard = "grayscale-card"; 
-                    statusBadge = `<div class="absolute top-2 left-2 bg-slate-800/80 backdrop-blur px-3 py-1 rounded-lg text-[10px] font-bold text-white shadow-sm uppercase tracking-wide">Aguarde</div>`;
                 } else {
-                    botaoHtml = `<button onclick="abrirModal('${evento.nome}', '${key}', ${limite})" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-200 group"><span>GARANTIR</span></button>`;
+                    botaoHtml = `<button onclick="abrirModal('${evento.nome}', '${key}', ${limite})" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-200 group">GARANTIR</button>`;
                     estiloCard = "";
-                    statusBadge = `<div class="absolute top-2 left-2 bg-green-500 px-3 py-1 rounded-lg text-[10px] font-bold text-white shadow-sm uppercase tracking-wide animate-pulse">Liberado</div>`;
                 }
 
                 container.innerHTML += `
-                    <div class="min-w-[85%] md:min-w-[350px] snap-center shrink-0 bg-white p-4 rounded-3xl shadow-sm border border-slate-100 ${estiloCard} transition duration-300">
+                    <div class="min-w-[85%] md:min-w-[350px] snap-center shrink-0 bg-white p-4 rounded-3xl shadow-sm border border-slate-100 ${estiloCard}">
                         <div class="relative h-44 rounded-2xl overflow-hidden mb-4 bg-gray-200 shadow-inner">
                             <img src="${evento.imagem || 'https://via.placeholder.com/400x200?text=Evento'}" class="w-full h-full object-cover">
-                            ${statusBadge}
+                            ${!isLocked ? '<div class="absolute top-2 left-2 bg-green-500 px-3 py-1 rounded-lg text-[10px] font-bold text-white uppercase tracking-wide animate-pulse">Liberado</div>' : ''}
                             <div class="absolute bottom-2 right-2 bg-white/90 backdrop-blur px-3 py-1 rounded-lg text-xs font-black text-slate-800 shadow-sm border border-white/50">
                                 📅 ${evento.data}
                             </div>
@@ -148,11 +139,8 @@
         function abrirModal(nome, key, limite) {
             eventoSelecionado = nome;
             limiteIngressosEvento = parseInt(limite) || 1;
-            
             document.getElementById('mdEvento').innerText = nome;
-            const textoQtd = limiteIngressosEvento > 1 ? `Você receberá ${limiteIngressosEvento} ingressos` : `1 Ingresso por aluno`;
-            document.getElementById('mdQtdInfo').innerText = textoQtd;
-
+            document.getElementById('mdQtdInfo').innerText = limiteIngressosEvento > 1 ? `Você receberá ${limiteIngressosEvento} ingressos` : `1 Ingresso por aluno`;
             document.getElementById('modalIngresso').classList.remove('hidden');
             document.getElementById('modalIngresso').classList.add('flex');
         }
@@ -161,8 +149,6 @@
             document.getElementById('modalIngresso').classList.add('hidden');
             document.getElementById('modalIngresso').classList.remove('flex');
             document.getElementById('inputMatricula').value = "";
-            document.getElementById('inputResponsavel').value = "";
-            document.getElementById('inputEmail').value = "";
             document.getElementById('feedbackAluno').classList.add('hidden');
             dadosAlunoEncontrado = null;
         }
@@ -170,7 +156,7 @@
         async function verificarAluno() {
             const mat = document.getElementById('inputMatricula').value.trim();
             const feed = document.getElementById('feedbackAluno');
-            if(!mat) { feed.classList.add('hidden'); dadosAlunoEncontrado = null; return; }
+            if(!mat) { feed.classList.add('hidden'); return; }
             feed.innerHTML = "🔍 Buscando...";
             feed.className = "mt-1 text-xs font-bold px-2 text-blue-500 block";
             try {
@@ -197,47 +183,41 @@
             if(!mat || !resp || !email) return Swal.fire({ icon: 'warning', title: 'Faltam dados', text: 'Preencha todos os campos.' });
 
             const textoOriginal = btn.innerHTML;
-            btn.innerHTML = `<span class="animate-spin inline-block mr-2">↻</span> Processando...`;
+            btn.innerHTML = `<span class="animate-spin inline-block mr-2">↻</span> Gerando...`;
             btn.disabled = true;
 
             try {
-                // 1. Validação
                 if (!dadosAlunoEncontrado) {
-                    const snapCheck = await db.ref('alunos_db/'+mat).once('value');
-                    if(snapCheck.exists()) {
-                        const d = snapCheck.val();
-                        dadosAlunoEncontrado = { nome: d.nome, turma: d.turma || "N/A" };
-                    } else {
-                        Swal.fire({ icon: 'error', title: 'Não encontrado', text: 'Matrícula inválida.' });
-                        restaurarBotao(btn, textoOriginal); return;
+                    await verificarAluno();
+                    if(!dadosAlunoEncontrado) {
+                         Swal.fire({ icon: 'error', title: 'Não encontrado', text: 'Matrícula inválida.' });
+                         restaurarBotao(btn, textoOriginal); return;
                     }
                 }
 
+                // Check Duplicidade
                 const checkSnap = await db.ref('ingressos').orderByChild('matricula').equalTo(mat).once('value');
                 let jaTem = false;
                 if(checkSnap.exists()) {
                     checkSnap.forEach(c => { if(c.val().evento === eventoSelecionado) jaTem = true; });
                 }
-
                 if(jaTem) {
-                    Swal.fire({ icon: 'info', title: 'Já garantido', text: `Este aluno já garantiu seus ingressos.` });
+                    Swal.fire({ icon: 'info', title: 'Já garantido', text: `Este aluno já possui ingresso.` });
                     fecharModal(); restaurarBotao(btn, textoOriginal); return;
                 }
 
-                // 2. Loop para Gerar e Baixar JPGs
                 const baseId = `${mat}-${Date.now().toString().slice(-6)}`;
                 let codigosGerados = [];
                 const renderContainer = document.getElementById('renderContainer');
-                
-                // Exibe alerta inicial
+
                 const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
-                Toast.fire({ icon: 'success', title: 'Gerando imagens...' });
+                Toast.fire({ icon: 'success', title: 'Preparando ingressos...' });
 
                 for (let i = 1; i <= limiteIngressosEvento; i++) {
                     const idIngresso = `${baseId}-${i}`;
                     codigosGerados.push(idIngresso);
 
-                    // Salva no DB
+                    // Salva no Banco
                     await db.ref('ingressos/' + idIngresso).set({
                         aluno: dadosAlunoEncontrado.nome,
                         turma: dadosAlunoEncontrado.turma,
@@ -250,65 +230,78 @@
                         data: new Date().toISOString()
                     });
 
-                    // Cria o HTML do Ticket para ser fotografado
-                    // Note que este HTML é estilizado especificamente para virar imagem (tamanho fixo)
+                    // HTML DO TICKET (COM QR CODE)
                     const htmlTicket = `
-                        <div class="ticket-design" style="padding: 20px; border: 2px solid #1e40af; border-radius: 15px; background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);">
+                        <div class="ticket-design" style="width: 400px; background: #fff; font-family: sans-serif; overflow: hidden; position: relative; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
                             
-                            <div style="background: #1e3a8a; color: white; padding: 15px; border-radius: 10px 10px 0 0; text-align: center;">
-                                <h1 style="margin:0; font-size: 22px; font-weight: 900; text-transform: uppercase;">${eventoSelecionado}</h1>
-                                <p style="margin:0; font-size: 10px; letter-spacing: 2px;">ESCOLAPRO EVENTOS</p>
+                            <div style="background: #1e40af; padding: 25px; text-align: center; color: white;">
+                                <h1 style="margin: 0; font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: -1px;">${eventoSelecionado}</h1>
+                                <p style="margin: 5px 0 0 0; font-size: 10px; opacity: 0.8; letter-spacing: 3px;">ESCOLAPRO EVENTOS</p>
                             </div>
 
-                            <div style="padding: 20px;">
-                                <div style="margin-bottom: 15px;">
-                                    <p style="font-size: 10px; color: #64748b; font-weight: bold; margin-bottom: 2px;">ALUNO(A)</p>
-                                    <p style="font-size: 18px; font-weight: bold; color: #1e293b; margin: 0; line-height: 1.2;">${dadosAlunoEncontrado.nome}</p>
-                                    <p style="font-size: 12px; color: #475569;">${dadosAlunoEncontrado.turma}</p>
+                            <div style="padding: 25px;">
+                                <div style="margin-bottom: 20px;">
+                                    <p style="font-size: 10px; color: #94a3b8; font-weight: bold; text-transform: uppercase;">Aluno(a)</p>
+                                    <h2 style="margin: 0; font-size: 20px; color: #1e293b; font-weight: 800; line-height: 1.2;">${dadosAlunoEncontrado.nome}</h2>
+                                    <p style="margin: 2px 0 0 0; font-size: 14px; color: #64748b;">${dadosAlunoEncontrado.turma}</p>
                                 </div>
 
-                                <div style="margin-bottom: 15px;">
-                                    <p style="font-size: 10px; color: #64748b; font-weight: bold; margin-bottom: 2px;">RESPONSÁVEL</p>
-                                    <p style="font-size: 14px; font-weight: 600; color: #1e293b; margin: 0;">${resp}</p>
+                                <div style="margin-bottom: 25px;">
+                                    <p style="font-size: 10px; color: #94a3b8; font-weight: bold; text-transform: uppercase;">Responsável</p>
+                                    <p style="margin: 0; font-size: 16px; color: #334155; font-weight: 600;">${resp}</p>
                                 </div>
 
-                                <div style="border-top: 2px dashed #cbd5e1; margin: 15px 0;"></div>
+                                <div style="border-top: 2px dashed #cbd5e1; margin-bottom: 20px;"></div>
 
-                                <div style="display: flex; justify-content: space-between; align-items: end;">
-                                    <div>
-                                        <p style="font-size: 10px; color: #64748b; font-weight: bold;">CÓDIGO DE VALIDAÇÃO</p>
-                                        <p style="font-size: 14px; font-family: monospace; font-weight: bold; background: #e2e8f0; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-top: 4px;">${idIngresso}</p>
-                                    </div>
-                                    <div style="text-align: right;">
-                                        <div style="background: #22c55e; color: white; padding: 5px 10px; border-radius: 8px; font-size: 12px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                                            ${i} / ${limiteIngressosEvento}
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <div style="flex: 1;">
+                                        <p style="font-size: 10px; color: #94a3b8; font-weight: bold; text-transform: uppercase; margin-bottom: 5px;">Código de Validação</p>
+                                        <div style="background: #f1f5f9; padding: 8px 12px; border-radius: 8px; font-family: monospace; font-weight: bold; color: #334155; font-size: 14px; display: inline-block;">
+                                            ${idIngresso}
                                         </div>
                                     </div>
+                                    
+                                    <div id="qrcode-target" style="background: white; padding: 5px; border-radius: 8px; border: 1px solid #e2e8f0;"></div>
                                 </div>
                             </div>
-                            <div style="background: #1e3a8a; height: 10px; width: 100%; position: absolute; bottom: 0; left: 0;"></div>
+
+                            <div style="background: #f8fafc; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0;">
+                                <span style="font-size: 10px; color: #94a3b8;">Apresente este código na entrada</span>
+                                <div style="background: #22c55e; color: white; padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 12px;">
+                                    ${i} / ${limiteIngressosEvento}
+                                </div>
+                            </div>
                         </div>
                     `;
 
                     renderContainer.innerHTML = htmlTicket;
 
-                    // Converte para Canvas e baixa
-                    // Aguarda 300ms para garantir renderização de fontes
-                    await new Promise(r => setTimeout(r, 300));
-                    
+                    // GERA O QR CODE DINAMICAMENTE
+                    // O container já está no DOM, agora injetamos o QR code nele
+                    new QRCode(document.getElementById("qrcode-target"), {
+                        text: idIngresso, // O que o QR Code vai ler
+                        width: 80,
+                        height: 80,
+                        colorDark : "#1e3a8a",
+                        colorLight : "#ffffff",
+                        correctLevel : QRCode.CorrectLevel.H
+                    });
+
+                    // Aguarda renderização (QR Code + Fontes)
+                    await new Promise(r => setTimeout(r, 500)); 
+
                     const element = renderContainer.querySelector('.ticket-design');
                     const canvas = await html2canvas(element, { scale: 2, useCORS: true });
                     
-                    // Cria link de download
                     const link = document.createElement('a');
                     link.download = `Ingresso-${dadosAlunoEncontrado.nome}-${i}.jpg`;
                     link.href = canvas.toDataURL('image/jpeg', 0.9);
                     link.click();
-                    
-                    renderContainer.innerHTML = ""; // Limpa para o próximo
+
+                    renderContainer.innerHTML = ""; // Limpa
                 }
 
-                // 3. Email
+                // Email
                 const templateParams = {
                     nome_aluno: dadosAlunoEncontrado.nome,
                     turma: dadosAlunoEncontrado.turma,
@@ -322,14 +315,14 @@
                 fecharModal();
                 Swal.fire({ 
                     icon: 'success', 
-                    title: 'Pronto!', 
-                    html: `Geramos <b>${limiteIngressosEvento} imagem(ns)</b>.<br>Verifique seus downloads!`,
+                    title: 'Sucesso!', 
+                    html: `Ingressos gerados com QR Code!`,
                     confirmButtonColor: '#10B981'
                 });
 
             } catch (error) {
                 console.error("Erro:", error);
-                Swal.fire({ icon: 'error', title: 'Erro', text: 'Erro ao gerar imagem.' });
+                Swal.fire({ icon: 'error', title: 'Erro', text: 'Verifique sua conexão.' });
             }
             restaurarBotao(btn, textoOriginal);
         }
