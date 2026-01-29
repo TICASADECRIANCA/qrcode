@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CASAQR - Eventos</title>
+    <title>CASAQR - EVENTOS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
         .grayscale-card { filter: grayscale(100%); opacity: 0.8; }
@@ -36,46 +37,38 @@
 
     <div id="modalIngresso" class="fixed inset-0 bg-slate-900/90 hidden items-center justify-center z-50 backdrop-blur-sm p-4 transition-opacity duration-300">
         <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative transform scale-100 transition-transform duration-300 max-h-[90vh] overflow-y-auto">
-            
             <button onclick="fecharModal()" class="absolute top-4 right-4 bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center font-bold text-gray-500 hover:bg-gray-200 z-10">✕</button>
-            
             <div class="p-6 pt-10 text-center">
                 <div class="mb-2 inline-block p-3 rounded-full bg-blue-50 text-blue-600 text-2xl">🎟️</div>
                 <h3 class="text-xl font-black text-slate-800 mb-1 leading-tight" id="mdEvento">Nome do Evento</h3>
-                <p class="text-xs text-gray-500 mb-4 font-medium uppercase tracking-wide">Preencha os dados</p>
+                <p class="text-xs text-blue-600 bg-blue-50 py-1 px-3 rounded-full inline-block mb-4 font-bold uppercase tracking-wide" id="mdQtdInfo">1 Ingresso por aluno</p>
                 
                 <div class="space-y-3 text-left">
-                    
                     <div>
-                        <label class="text-[10px] font-bold text-gray-400 ml-2">MATRÍCULA (Digite e aguarde)</label>
+                        <label class="text-[10px] font-bold text-gray-400 ml-2">MATRÍCULA</label>
                         <input type="number" id="inputMatricula" onblur="verificarAluno()" placeholder="Ex: 102030" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl font-bold text-slate-700 outline-none focus:ring-2 ring-blue-500 transition-all">
                         <div id="feedbackAluno" class="mt-1 text-xs font-bold hidden px-2"></div>
                     </div>
-
                     <div>
                         <label class="text-[10px] font-bold text-gray-400 ml-2">NOME DO RESPONSÁVEL</label>
                         <input type="text" id="inputResponsavel" placeholder="Quem está solicitando?" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm text-slate-700 outline-none focus:ring-2 ring-blue-500">
                     </div>
-
                     <div>
-                        <label class="text-[10px] font-bold text-gray-400 ml-2">EMAIL (Para o comprovante)</label>
+                        <label class="text-[10px] font-bold text-gray-400 ml-2">EMAIL</label>
                         <input type="email" id="inputEmail" placeholder="seuemail@exemplo.com" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm text-slate-700 outline-none focus:ring-2 ring-blue-500">
                     </div>
-
                     <button onclick="gerarIngresso()" id="btnGerar" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 active:scale-95 transition shadow-lg shadow-blue-200 mt-2">
-                        GARANTIR AGORA
+                        GARANTIR & BAIXAR
                     </button>
                 </div>
-            </div>
-            
-            <div class="bg-slate-50 p-3 text-center text-[10px] text-gray-400 font-bold uppercase tracking-widest border-t border-slate-100">
-                Sistema Oficial EscolaPro
             </div>
         </div>
     </div>
 
+    <div id="areaImpressao" class="fixed top-0 left-0 w-[500px] bg-white hidden z-[-1]"></div>
+
     <script>
-        // --- 1. CONFIGURAÇÕES ---
+        // --- CONFIGURAÇÕES ---
         const firebaseConfig = { 
             apiKey: "AIzaSyBFDlEOhuUerWjSfK_mPVxoj5sGbSDhe9k", 
             authDomain: "ingressoscdc-9ce88.firebaseapp.com", 
@@ -87,27 +80,26 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-
-        // EMAILJS INICIALIZADO
         emailjs.init("RmJx_2rhtntD90vsH"); 
 
         let eventoSelecionado = null;
-        let dadosAlunoEncontrado = null; // Agora guarda Nome e Turma
+        let limiteIngressosEvento = 1; // Padrão
+        let dadosAlunoEncontrado = null; 
 
-        // --- 2. CARREGAR EVENTOS ---
+        // --- CARREGAR EVENTOS ---
         db.ref('eventos').on('value', (snapshot) => {
             const container = document.getElementById('eventosContainer');
             container.innerHTML = "";
-
             if (!snapshot.exists()) {
                 container.innerHTML = `<div class="w-full text-center mt-4 opacity-50"><p class="font-bold text-slate-400">Nenhum evento.</p></div>`;
                 return;
             }
-
             snapshot.forEach((childSnapshot) => {
                 const evento = childSnapshot.val();
                 const key = childSnapshot.key;
                 const isLocked = evento.liberado === false;
+                // Lê o limite definido no Admin ou usa 1
+                const limite = evento.limit_ingressos || 1; 
                 
                 let botaoHtml = "";
                 let estiloCard = "";
@@ -118,7 +110,7 @@
                     estiloCard = "grayscale-card"; 
                     statusBadge = `<div class="absolute top-2 left-2 bg-slate-800/80 backdrop-blur px-3 py-1 rounded-lg text-[10px] font-bold text-white shadow-sm uppercase tracking-wide">Aguarde</div>`;
                 } else {
-                    botaoHtml = `<button onclick="abrirModal('${evento.nome}', '${key}')" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-200 group"><span>GARANTIR</span></button>`;
+                    botaoHtml = `<button onclick="abrirModal('${evento.nome}', '${key}', ${limite})" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-200 group"><span>GARANTIR</span></button>`;
                     estiloCard = "";
                     statusBadge = `<div class="absolute top-2 left-2 bg-green-500 px-3 py-1 rounded-lg text-[10px] font-bold text-white shadow-sm uppercase tracking-wide animate-pulse">Liberado</div>`;
                 }
@@ -139,10 +131,18 @@
             });
         });
 
-        // --- 3. MODAL ---
-        function abrirModal(nome, key) {
+        function abrirModal(nome, key, limite) {
             eventoSelecionado = nome;
+            limiteIngressosEvento = parseInt(limite) || 1;
+            
             document.getElementById('mdEvento').innerText = nome;
+            
+            // Atualiza texto informativo
+            const textoQtd = limiteIngressosEvento > 1 
+                ? `Você receberá ${limiteIngressosEvento} ingressos` 
+                : `1 Ingresso por aluno`;
+            document.getElementById('mdQtdInfo').innerText = textoQtd;
+
             document.getElementById('modalIngresso').classList.remove('hidden');
             document.getElementById('modalIngresso').classList.add('flex');
         }
@@ -150,8 +150,6 @@
         function fecharModal() {
             document.getElementById('modalIngresso').classList.add('hidden');
             document.getElementById('modalIngresso').classList.remove('flex');
-            
-            // Limpa tudo
             document.getElementById('inputMatricula').value = "";
             document.getElementById('inputResponsavel').value = "";
             document.getElementById('inputEmail').value = "";
@@ -159,68 +157,53 @@
             dadosAlunoEncontrado = null;
         }
 
-        // --- 4. VALIDAR ALUNO E PEGAR TURMA ---
         async function verificarAluno() {
             const mat = document.getElementById('inputMatricula').value.trim();
             const feed = document.getElementById('feedbackAluno');
-            
-            if(!mat) {
-                feed.classList.add('hidden');
-                dadosAlunoEncontrado = null;
-                return;
-            }
-
+            if(!mat) { feed.classList.add('hidden'); dadosAlunoEncontrado = null; return; }
             feed.innerHTML = "🔍 Buscando...";
             feed.className = "mt-1 text-xs font-bold px-2 text-blue-500 block";
-
             try {
                 const snap = await db.ref('alunos_db/'+mat).once('value');
                 if(snap.exists()) {
-                    const dados = snap.val();
-                    
-                    // Salva nome e turma
-                    dadosAlunoEncontrado = {
-                        nome: dados.nome,
-                        turma: dados.turma || "Turma não inf." // Garante que não quebre se estiver vazio
-                    };
-
-                    feed.innerHTML = `✅ ${dadosAlunoEncontrado.nome} (${dadosAlunoEncontrado.turma})`;
+                    const d = snap.val();
+                    dadosAlunoEncontrado = { nome: d.nome, turma: d.turma || "N/A" };
+                    feed.innerHTML = `✅ ${d.nome} (${d.turma})`;
                     feed.className = "mt-1 text-xs font-bold px-2 text-green-600 block";
                 } else {
                     dadosAlunoEncontrado = null;
                     feed.innerHTML = `❌ Matrícula não encontrada`;
                     feed.className = "mt-1 text-xs font-bold px-2 text-red-500 block";
                 }
-            } catch(e) {
-                console.error(e);
-            }
+            } catch(e) { console.error(e); }
         }
 
-        // --- 5. GERAR INGRESSO + EMAIL ---
         async function gerarIngresso() {
             const mat = document.getElementById('inputMatricula').value.trim();
             const resp = document.getElementById('inputResponsavel').value.trim();
             const email = document.getElementById('inputEmail').value.trim();
             const btn = document.getElementById('btnGerar');
 
-            if(!mat || !resp || !email) {
-                return Swal.fire({ icon: 'warning', title: 'Faltam dados', text: 'Preencha todos os campos.' });
-            }
-
-            // Garante validação
-            if(!dadosAlunoEncontrado) {
-                await verificarAluno();
-                if(!dadosAlunoEncontrado) {
-                    return Swal.fire({ icon: 'error', title: 'Erro', text: 'Matrícula inválida.' });
-                }
-            }
+            if(!mat || !resp || !email) return Swal.fire({ icon: 'warning', title: 'Faltam dados', text: 'Preencha todos os campos.' });
 
             const textoOriginal = btn.innerHTML;
-            btn.innerHTML = `<span class="animate-spin inline-block mr-2">↻</span> Gerando...`;
+            btn.innerHTML = `<span class="animate-spin inline-block mr-2">↻</span> Processando...`;
             btn.disabled = true;
 
             try {
-                // Checa duplicidade
+                // 1. Validação de Segurança do Aluno
+                if (!dadosAlunoEncontrado) {
+                    const snapCheck = await db.ref('alunos_db/'+mat).once('value');
+                    if(snapCheck.exists()) {
+                        const d = snapCheck.val();
+                        dadosAlunoEncontrado = { nome: d.nome, turma: d.turma || "N/A" };
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Não encontrado', text: 'Matrícula inválida.' });
+                        restaurarBotao(btn, textoOriginal); return;
+                    }
+                }
+
+                // 2. Verificar Duplicidade
                 const checkSnap = await db.ref('ingressos').orderByChild('matricula').equalTo(mat).once('value');
                 let jaTem = false;
                 if(checkSnap.exists()) {
@@ -228,52 +211,106 @@
                 }
 
                 if(jaTem) {
-                    Swal.fire({ icon: 'info', title: 'Já garantido', text: `Este aluno já possui ingresso.` });
+                    Swal.fire({ icon: 'info', title: 'Já garantido', text: `Este aluno já garantiu seus ingressos.` });
                     fecharModal(); restaurarBotao(btn, textoOriginal); return;
                 }
 
-                // ID Único
-                const idIngresso = `${mat}-${Date.now().toString().slice(-6)}`;
-                
-                // SALVA NO FIREBASE (COM TURMA)
-                await db.ref('ingressos/' + idIngresso).set({
-                    aluno: dadosAlunoEncontrado.nome,
-                    turma: dadosAlunoEncontrado.turma, // <--- CAMPO NOVO
-                    matricula: mat,
-                    responsavel: resp,
-                    email: email,
-                    evento: eventoSelecionado,
-                    tipo: 'Aluno',
-                    utilizado: false,
-                    data: new Date().toISOString()
-                });
+                // 3. Gerar Ingressos (LOOP Baseado no Limite)
+                const baseId = `${mat}-${Date.now().toString().slice(-6)}`;
+                let codigosGerados = [];
 
-                // ENVIA EMAIL (COM TURMA E SEUS IDs)
+                // Prepara a área de impressão
+                const printContainer = document.getElementById('areaImpressao');
+                printContainer.innerHTML = ''; // Limpa anterior
+
+                for (let i = 1; i <= limiteIngressosEvento; i++) {
+                    const idIngresso = `${baseId}-${i}`;
+                    codigosGerados.push(idIngresso);
+
+                    // Salva no Firebase
+                    await db.ref('ingressos/' + idIngresso).set({
+                        aluno: dadosAlunoEncontrado.nome,
+                        turma: dadosAlunoEncontrado.turma,
+                        matricula: mat,
+                        responsavel: resp,
+                        email: email,
+                        evento: eventoSelecionado,
+                        numero_ingresso: i,
+                        total_ingressos: limiteIngressosEvento,
+                        data: new Date().toISOString()
+                    });
+
+                    // Cria o visual do ingresso para o PDF
+                    // Este HTML é o que vai aparecer no PDF baixado
+                    const ticketHTML = `
+                        <div style="border: 2px dashed #1e3a8a; padding: 20px; margin-bottom: 20px; border-radius: 15px; font-family: sans-serif; page-break-inside: avoid;">
+                            <div style="background: #1e3a8a; color: white; padding: 10px; border-radius: 8px 8px 0 0; text-align: center;">
+                                <h2 style="margin:0; font-size: 18px;">${eventoSelecionado}</h2>
+                                <p style="margin:0; font-size: 12px;">ESCOLA PRO EVENTOS</p>
+                            </div>
+                            <div style="padding: 15px; background: #f8fafc;">
+                                <p><strong>Aluno:</strong> ${dadosAlunoEncontrado.nome}</p>
+                                <p><strong>Turma:</strong> ${dadosAlunoEncontrado.turma}</p>
+                                <p><strong>Responsável:</strong> ${resp}</p>
+                                <hr style="margin: 10px 0; border: 0; border-top: 1px solid #ddd;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <p style="font-size: 10px; color: #666;">CÓDIGO DE VALIDAÇÃO</p>
+                                        <p style="font-size: 16px; font-weight: bold; font-family: monospace;">${idIngresso}</p>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <span style="background: #22c55e; color: white; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold;">INGRESSO ${i}/${limiteIngressosEvento}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    printContainer.innerHTML += ticketHTML;
+                }
+
+                // 4. Envia Email (apenas um aviso)
                 const templateParams = {
                     nome_aluno: dadosAlunoEncontrado.nome,
-                    turma: dadosAlunoEncontrado.turma, // Pode usar {{turma}} no template do EmailJS
+                    turma: dadosAlunoEncontrado.turma,
                     nome_responsavel: resp,
                     evento: eventoSelecionado,
-                    codigo_ingresso: idIngresso,
+                    codigo_ingresso: codigosGerados.join(', '), // Manda lista de códigos
                     to_email: email
                 };
 
-                // SEUS IDs AQUI:
                 emailjs.send("service_r1vrjkp", "template_4yvqw5g", templateParams)
-                    .then(() => console.log("Email enviado"))
                     .catch((err) => console.error("Erro email", err));
 
-                fecharModal();
-                Swal.fire({ 
-                    icon: 'success', 
-                    title: 'Sucesso!', 
-                    html: `Ingresso de <b>${dadosAlunoEncontrado.nome}</b> confirmado!<br>Enviado para ${email}.`,
-                    confirmButtonColor: '#10B981'
-                });
+                // 5. Download Automático do PDF
+                // Mostra um toast enquanto baixa
+                const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+                Toast.fire({ icon: 'success', title: 'Gerando PDF...' });
+
+                const elementoParaImprimir = document.getElementById('areaImpressao');
+                const opt = {
+                    margin:       10,
+                    filename:     `Ingressos-${dadosAlunoEncontrado.nome}.pdf`,
+                    image:        { type: 'jpeg', quality: 0.98 },
+                    html2canvas:  { scale: 2 },
+                    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+
+                // Aguarda um pouco para o HTML renderizar e baixa
+                setTimeout(() => {
+                    html2pdf().set(opt).from(elementoParaImprimir).save().then(() => {
+                        fecharModal();
+                        Swal.fire({ 
+                            icon: 'success', 
+                            title: 'Sucesso!', 
+                            html: `Foram gerados <b>${limiteIngressosEvento} ingressos</b>.<br>O download começou automaticamente!`,
+                            confirmButtonColor: '#10B981'
+                        });
+                    });
+                }, 500);
 
             } catch (error) {
-                console.error(error);
-                Swal.fire({ icon: 'error', title: 'Erro', text: 'Erro de conexão.' });
+                console.error("Erro:", error);
+                Swal.fire({ icon: 'error', title: 'Erro', text: 'Erro ao processar.' });
             }
             restaurarBotao(btn, textoOriginal);
         }
@@ -282,4 +319,3 @@
     </script>
 </body>
 </html>
-
