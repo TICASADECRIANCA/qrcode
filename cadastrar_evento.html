@@ -11,9 +11,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
     <style>
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
 <body class="bg-slate-100 font-sans pb-20">
@@ -99,9 +100,10 @@
         <div class="lg:col-span-2 space-y-6">
             
             <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                <h4 class="font-bold text-slate-700 mb-2 text-sm uppercase">Gerenciar Eventos (Trava & Estoque)</h4>
-                <div id="listaEventosAdmin" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto custom-scrollbar">
-                    <p>Carregando...</p>
+                <h4 class="font-bold text-slate-700 mb-2 text-sm uppercase px-2">Gerenciar Eventos (Lista Completa)</h4>
+                
+                <div id="listaEventosAdmin" class="grid grid-cols-1 gap-3 max-h-[500px] overflow-y-auto custom-scrollbar p-1">
+                    <p class="text-gray-400 text-sm p-2">Carregando eventos...</p>
                 </div>
             </div>
 
@@ -186,7 +188,7 @@
         }
         carregarTudo();
 
-        // 2. ATUALIZAR LISTAS
+        // 2. ATUALIZAR LISTA DE EVENTOS (MODIFICADO PARA FORMATO DE LISTA)
         function atualizarUIEventos() {
             const listaAdm = document.getElementById('listaEventosAdmin');
             const sel = document.getElementById('selEventos');
@@ -196,7 +198,7 @@
             sel.innerHTML = '<option value="">Selecione o Evento...</option>';
 
             const eventosArray = Object.values(todosEventos);
-            if(eventosArray.length === 0) { listaAdm.innerHTML = "<p class='text-xs text-gray-400 p-2'>Nenhum evento.</p>"; return; }
+            if(eventosArray.length === 0) { listaAdm.innerHTML = "<p class='text-xs text-gray-400 p-2'>Nenhum evento criado.</p>"; return; }
 
             eventosArray.forEach(ev => {
                 const vendidos = contagemAvulsosPorEvento[ev.nome] || 0;
@@ -219,28 +221,35 @@
                 }
                 const limitIngressos = ev.limit_ingressos || 1;
 
+                // --- AQUI ESTA A MUDANÇA VISUAL DOS CARDS PARA MODO LISTA ---
                 listaAdm.innerHTML += `
-                <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 relative group flex flex-col justify-between">
-                    <div>
-                        <div class="flex justify-between items-start mb-2">
-                            <div>
-                                <p class="font-bold text-sm text-slate-800 truncate w-32">${ev.nome}</p>
-                                <p class="text-[10px] text-gray-500">${ev.data}</p>
-                                <p class="text-[10px] text-blue-600 font-bold bg-blue-100 px-1 rounded inline-block">Limite Aluno: ${limitIngressos}</p>
-                            </div>
-                            <div class="flex gap-1">
-                                <button onclick="alternarTrava('${ev.key}', ${isLiberado})" class="text-[10px] font-bold border px-2 py-1 rounded transition flex items-center gap-1 ${corTrava}">
-                                    ${iconeTrava} ${textoTrava}
-                                </button>
-                                <button onclick="excluirEvento('${ev.key}')" class="text-[10px] bg-white border border-red-100 text-red-400 px-2 py-1 rounded hover:bg-red-50 hover:text-red-600 transition">🗑️</button>
-                            </div>
+                <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 flex flex-wrap md:flex-nowrap items-center justify-between gap-4 hover:shadow-md transition">
+                    
+                    <div class="flex-1 min-w-[200px]">
+                        <div class="flex items-center gap-2 mb-1">
+                            <h4 class="font-black text-slate-800 text-sm truncate" title="${ev.nome}">${ev.nome}</h4>
+                            <span class="text-[10px] bg-white border border-gray-200 px-2 py-0.5 rounded text-gray-500 font-bold">${ev.data}</span>
                         </div>
-                        <div class="w-full bg-gray-200 rounded-full h-2.5 mb-1"><div class="${corBarra} h-2.5 rounded-full" style="width: ${porcentagem}%"></div></div>
-                        <div class="flex justify-between text-[10px] font-bold text-gray-500">
-                            <span>Avulsos: ${vendidos}</span>
-                            <span>Estoque Avulso: ${limite > 0 ? limite : '∞'}</span>
+                        <div class="flex items-center gap-3 text-[10px] text-gray-500 font-medium">
+                            <span>Limite/Aluno: <b class="text-blue-600">${limitIngressos}</b></span>
+                            <span>•</span>
+                            <span>Avulsos: <b>${vendidos}</b> / ${limite > 0 ? limite : '∞'}</span>
+                        </div>
+                        
+                        <div class="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                            <div class="${corBarra} h-1.5 rounded-full transition-all duration-500" style="width: ${porcentagem}%"></div>
                         </div>
                     </div>
+
+                    <div class="flex items-center gap-2 shrink-0">
+                        <button onclick="alternarTrava('${ev.key}', ${isLiberado})" class="text-xs font-bold border px-3 py-2 rounded-lg transition flex items-center gap-1 shadow-sm ${corTrava}">
+                            ${iconeTrava} ${textoTrava}
+                        </button>
+                        <button onclick="excluirEvento('${ev.key}')" class="text-xs bg-white border border-red-200 text-red-500 px-3 py-2 rounded-lg hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition shadow-sm" title="Excluir Evento">
+                            🗑️
+                        </button>
+                    </div>
+
                 </div>`;
             });
             if(selecaoAtual) sel.value = selecaoAtual;
@@ -333,19 +342,18 @@
             alert("Evento Criado (Bloqueado)!"); location.reload();
         }
 
-        // --- RENDERIZAR TABELA (COM STATUS, REENVIO e CONTADOR DE VALIDADOS) ---
         function renderizarTabelaIngressos(lista) {
             const tbody = document.getElementById('tabelaIngressos'); tbody.innerHTML = "";
             let qtd = 0; 
             let avulsos = 0; 
-            let validados = 0; // Novo contador
+            let validados = 0;
 
             if(lista.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-gray-400">Nenhum ingresso.</td></tr>`; return; }
 
             lista.slice().reverse().forEach(ing => {
                 qtd++; 
                 if(ing.tipo === 'Avulso') avulsos++;
-                if(ing.status === 'validado') validados++; // Incrementa se estiver validado
+                if(ing.status === 'validado') validados++;
 
                 const tipoBadge = ing.tipo === 'Avulso' 
                     ? '<span class="text-[10px] bg-purple-100 text-purple-700 px-2 py-1 rounded font-bold">AVULSO</span>' 
@@ -366,7 +374,6 @@
                     statusHtml = `<div class="flex justify-center"><span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded border border-blue-100 font-bold uppercase tracking-wide">🎟️ Liberado</span></div>`;
                 }
 
-                // --- BOTÕES DE AÇÃO ---
                 tbody.innerHTML += `
                     <tr class="${rowColor} transition">
                         <td class="p-4"><div class="font-bold text-slate-800">${ing.aluno}</div><div class="text-xs text-slate-400 font-mono">#${ing.key}</div></td>
@@ -382,7 +389,7 @@
             });
             document.getElementById('totalGeral').innerText = qtd; 
             document.getElementById('totalAvulsos').innerText = avulsos;
-            document.getElementById('totalValidados').innerText = validados; // Atualiza o HTML
+            document.getElementById('totalValidados').innerText = validados; 
         }
 
         async function reenviarEmail(key) {
@@ -437,4 +444,3 @@
     </script>
 </body>
 </html>
-
