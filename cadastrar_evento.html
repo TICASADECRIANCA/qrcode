@@ -11,6 +11,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
     <style>
+        /* Barras de rolagem mais bonitas */
         .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -99,11 +100,24 @@
 
         <div class="lg:col-span-2 space-y-6">
             
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                <h4 class="font-bold text-slate-700 mb-2 text-sm uppercase px-2">Gerenciar Eventos (Lista Completa)</h4>
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[350px]">
+                <h4 class="font-bold text-slate-700 mb-2 text-sm uppercase px-2 shrink-0">Gerenciar Eventos (Lista)</h4>
                 
-                <div id="listaEventosAdmin" class="grid grid-cols-1 gap-3 max-h-[500px] overflow-y-auto custom-scrollbar p-1">
-                    <p class="text-gray-400 text-sm p-2">Carregando eventos...</p>
+                <div class="overflow-hidden flex flex-col flex-1 border border-gray-100 rounded-lg">
+                    <div class="bg-gray-100 text-xs uppercase text-gray-500 font-bold flex shrink-0">
+                        <div class="p-3 w-5/12">Evento</div>
+                        <div class="p-3 w-3/12">Vendas</div>
+                        <div class="p-3 w-2/12 text-center">Status</div>
+                        <div class="p-3 w-2/12 text-right">Ação</div>
+                    </div>
+                    
+                    <div class="overflow-y-auto custom-scrollbar flex-1 bg-white">
+                        <table class="w-full text-left text-sm text-gray-600">
+                            <tbody id="listaEventosTabela" class="divide-y divide-gray-100">
+                                <tr><td colspan="4" class="p-4 text-center text-xs">Carregando eventos...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -160,12 +174,16 @@
 
         // 1. CARREGAR DADOS
         function carregarTudo() {
+            // Listener de Eventos
             db.ref('eventos').on('value', snapEventos => {
                 todosEventos = {};
                 if(snapEventos.exists()) {
-                    snapEventos.forEach(i => todosEventos[i.key] = { key: i.key, ...i.val() });
+                    snapEventos.forEach(child => {
+                        todosEventos[child.key] = { key: child.key, ...child.val() };
+                    });
                 }
                 
+                // Listener de Ingressos (só atualiza a tela depois de ter os ingressos para contar o estoque)
                 db.ref('ingressos').on('value', snapIngressos => {
                     todosIngressos = [];
                     contagemAvulsosPorEvento = {}; 
@@ -174,84 +192,99 @@
                             const ing = { key: i.key, ...i.val() };
                             todosIngressos.push(ing);
                             
+                            // Contagem de estoque
                             if(ing.tipo === 'Avulso') {
                                 if(!contagemAvulsosPorEvento[ing.evento]) contagemAvulsosPorEvento[ing.evento] = 0;
                                 contagemAvulsosPorEvento[ing.evento]++;
                             }
                         });
                     }
-                    atualizarUIEventos();
-                    renderizarTabelaIngressos(todosIngressos);
-                    atualizarInfoEstoque();
+                    atualizarUIEventos(); // Atualiza a lista de eventos
+                    renderizarTabelaIngressos(todosIngressos); // Atualiza a tabela de ingressos
+                    atualizarInfoEstoque(); // Atualiza o select
                 });
             });
         }
         carregarTudo();
 
-        // 2. ATUALIZAR LISTA DE EVENTOS (MODIFICADO PARA FORMATO DE LISTA)
+        // 2. ATUALIZAR LISTA DE EVENTOS (Lógica corrigida para garantir que TODOS apareçam)
         function atualizarUIEventos() {
-            const listaAdm = document.getElementById('listaEventosAdmin');
+            const tbodyEventos = document.getElementById('listaEventosTabela');
             const sel = document.getElementById('selEventos');
             const selecaoAtual = sel.value; 
 
-            listaAdm.innerHTML = "";
+            // Limpa o Select
             sel.innerHTML = '<option value="">Selecione o Evento...</option>';
 
             const eventosArray = Object.values(todosEventos);
-            if(eventosArray.length === 0) { listaAdm.innerHTML = "<p class='text-xs text-gray-400 p-2'>Nenhum evento criado.</p>"; return; }
+            
+            // Se não tiver eventos
+            if(eventosArray.length === 0) { 
+                tbodyEventos.innerHTML = "<tr><td colspan='4' class='p-4 text-center text-xs text-gray-400'>Nenhum evento criado.</td></tr>"; 
+                return; 
+            }
+
+            // Construir o HTML em uma variável primeiro (Mais rápido e seguro)
+            let htmlTabela = "";
 
             eventosArray.forEach(ev => {
+                // Cálculos
                 const vendidos = contagemAvulsosPorEvento[ev.nome] || 0;
                 const limite = parseInt(ev.estoque) || 0;
                 const disponivel = limite - vendidos;
                 const statusTexto = limite > 0 ? `Restam ${Math.max(0, disponivel)}` : "Ilimitado";
+                
                 const isLiberado = ev.liberado === true;
-                const iconeTrava = isLiberado ? '🔓' : '🔒';
-                const corTrava = isLiberado ? 'text-green-600 bg-green-100 border-green-200' : 'text-slate-600 bg-slate-100 border-slate-200';
-                const textoTrava = isLiberado ? 'LIBERADO' : 'BLOQUEADO';
+                const btnClass = isLiberado ? 'bg-green-100 text-green-700 border-green-200' : 'bg-slate-100 text-slate-500 border-slate-200';
+                const iconTrava = isLiberado ? '🔓 Aberto' : '🔒 Fechado';
+
+                // Adiciona ao Select (Ingresso Avulso)
                 const opt = document.createElement('option'); 
-                opt.value = ev.nome; opt.text = `${ev.nome} (${statusTexto})`; 
+                opt.value = ev.nome; 
+                opt.text = `${ev.nome} (${statusTexto})`; 
                 sel.appendChild(opt);
                 
+                // Barra de Progresso
                 let porcentagem = 0; let corBarra = 'bg-blue-600';
                 if(limite > 0) {
                     porcentagem = Math.min((vendidos / limite) * 100, 100);
                     if(porcentagem >= 100) corBarra = 'bg-gray-800'; 
                     else if(porcentagem > 90) corBarra = 'bg-red-600';
                 }
-                const limitIngressos = ev.limit_ingressos || 1;
 
-                // --- AQUI ESTA A MUDANÇA VISUAL DOS CARDS PARA MODO LISTA ---
-                listaAdm.innerHTML += `
-                <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 flex flex-wrap md:flex-nowrap items-center justify-between gap-4 hover:shadow-md transition">
-                    
-                    <div class="flex-1 min-w-[200px]">
-                        <div class="flex items-center gap-2 mb-1">
-                            <h4 class="font-black text-slate-800 text-sm truncate" title="${ev.nome}">${ev.nome}</h4>
-                            <span class="text-[10px] bg-white border border-gray-200 px-2 py-0.5 rounded text-gray-500 font-bold">${ev.data}</span>
+                // Adiciona à string da Tabela (Gerenciar Eventos)
+                htmlTabela += `
+                <tr class="hover:bg-slate-50 transition group border-b border-gray-50">
+                    <td class="p-3 w-5/12 align-middle">
+                        <div class="font-bold text-slate-800 text-sm truncate" title="${ev.nome}">${ev.nome}</div>
+                        <div class="text-[10px] text-gray-400 font-mono">${ev.data}</div>
+                    </td>
+                    <td class="p-3 w-3/12 align-middle">
+                        <div class="flex justify-between text-[10px] mb-1 font-bold text-gray-500">
+                            <span>${vendidos}</span>
+                            <span>${limite>0 ? limite : '∞'}</span>
                         </div>
-                        <div class="flex items-center gap-3 text-[10px] text-gray-500 font-medium">
-                            <span>Limite/Aluno: <b class="text-blue-600">${limitIngressos}</b></span>
-                            <span>•</span>
-                            <span>Avulsos: <b>${vendidos}</b> / ${limite > 0 ? limite : '∞'}</span>
+                        <div class="w-full bg-gray-200 rounded-full h-1.5">
+                            <div class="${corBarra} h-1.5 rounded-full" style="width: ${porcentagem}%"></div>
                         </div>
-                        
-                        <div class="w-full bg-gray-200 rounded-full h-1.5 mt-2">
-                            <div class="${corBarra} h-1.5 rounded-full transition-all duration-500" style="width: ${porcentagem}%"></div>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-2 shrink-0">
-                        <button onclick="alternarTrava('${ev.key}', ${isLiberado})" class="text-xs font-bold border px-3 py-2 rounded-lg transition flex items-center gap-1 shadow-sm ${corTrava}">
-                            ${iconeTrava} ${textoTrava}
+                    </td>
+                    <td class="p-3 w-2/12 text-center align-middle">
+                         <button onclick="alternarTrava('${ev.key}', ${isLiberado})" class="text-[10px] font-bold border px-2 py-1 rounded w-full ${btnClass} hover:opacity-80 transition">
+                            ${iconTrava}
                         </button>
-                        <button onclick="excluirEvento('${ev.key}')" class="text-xs bg-white border border-red-200 text-red-500 px-3 py-2 rounded-lg hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition shadow-sm" title="Excluir Evento">
+                    </td>
+                    <td class="p-3 w-2/12 text-right align-middle">
+                        <button onclick="excluirEvento('${ev.key}')" class="text-xs text-gray-300 hover:text-red-500 transition p-2 rounded-full hover:bg-red-50" title="Excluir">
                             🗑️
                         </button>
-                    </div>
-
-                </div>`;
+                    </td>
+                </tr>`;
             });
+
+            // Injeta o HTML de uma vez só
+            tbodyEventos.innerHTML = htmlTabela;
+
+            // Restaura a seleção do dropdown se possível
             if(selecaoAtual) sel.value = selecaoAtual;
         }
 
