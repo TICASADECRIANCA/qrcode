@@ -3,156 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Admin - CASAQR</title>
+    <title>Portal de Ingressos - ESCOLAPRO</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    
-    <style>
-        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-    </style>
 </head>
-<body class="bg-slate-100 font-sans pb-20">
+<body class="bg-gray-100 font-sans">
 
-    <nav class="bg-slate-900 text-white p-4 px-8 flex justify-between items-center shadow-lg sticky top-0 z-50">
-        <div class="font-black italic text-xl">CASAQR <span class="text-blue-400">ADMIN</span></div>
-        <div class="flex gap-3">
-            <a href="validador.html" target="_blank" class="px-4 py-2 bg-green-600 rounded-lg text-xs font-bold hover:bg-green-500 transition border border-green-400">📲 Abrir Validador</a>
-            <a href="index.html" target="_blank" class="px-4 py-2 bg-blue-600 rounded-lg text-xs font-bold hover:bg-blue-500 transition">👀 Ver Página de ingressos</a>
-        </div>
+    <div id="overlay" class="hidden fixed inset-0 bg-white/95 z-[100] flex flex-col items-center justify-center p-4">
+        <div id="loader" class="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-6"></div>
+        <div id="successIcon" class="hidden text-6xl mb-4">✅</div>
+        <h3 id="statusMsg" class="text-2xl font-black text-slate-800 text-center">Verificando...</h3>
+        <p id="subMsg" class="text-gray-500 mt-2 text-center">Aguarde um momento.</p>
+    </div>
+
+    <nav class="bg-white p-4 shadow-sm flex flex-wrap justify-between items-center px-4 md:px-8 border-b">
+        <div onclick="acessoSecreto()" class="text-2xl font-black text-blue-600 italic cursor-pointer select-none">ESCOLAPRO</div>
     </nav>
 
-    <div class="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4">
+    <div id="listaEventos" class="p-8 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-7xl mx-auto">
+        <p class="text-gray-500 col-span-3 text-center">Carregando eventos...</p>
+    </div>
 
-        <div class="space-y-6">
+    <div id="modalIngresso" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-[2.5rem] p-8 max-w-lg w-full shadow-2xl overflow-y-auto max-h-[90vh]">
+            <h3 id="nomeEvTitle" class="text-2xl font-black mb-1 uppercase text-blue-600">Garantir Ingresso</h3>
+            <p class="text-sm text-gray-400 mb-6 font-bold">Digite a matrícula para buscar o aluno.</p>
             
-            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-                <h3 class="font-black text-slate-800 text-lg mb-4 flex items-center gap-2">📅 Criar Evento</h3>
-                <div class="space-y-3">
-                    <input id="evNome" type="text" placeholder="Nome do Evento" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-500">
-                    <input id="evData" type="text" placeholder="Data (Ex: 25/10)" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-500">
-                    
-                    <div class="grid grid-cols-2 gap-2">
-                        <div class="relative">
-                            <label class="text-[10px] font-bold text-gray-400 absolute top-1 left-2">ESTOQUE AVULSO</label>
-                            <input id="evEstoque" type="number" placeholder="Ex: 300" class="w-full pt-5 pb-2 px-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-500 font-bold text-blue-900">
-                        </div>
-                        <div class="relative">
-                            <label class="text-[10px] font-bold text-gray-400 absolute top-1 left-2">QTD POR ALUNO</label>
-                            <input id="evQtd" type="number" placeholder="Ex: 2" value="1" min="1" class="w-full pt-5 pb-2 px-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-500 font-bold text-blue-900">
-                        </div>
-                    </div>
-
-                    <input id="evImg" type="text" placeholder="Link da Imagem (URL)" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-500">
-                    <input id="evBg" type="text" placeholder="Link Fundo PDF (Opcional)" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-500">
-                    
-                    <div class="p-3 bg-yellow-50 rounded-xl border border-yellow-200">
-                        <p class="text-xs font-bold text-yellow-700 mb-1">É pago?</p>
-                        <input id="evZap" type="text" placeholder="Zap (5511999...)" class="w-full bg-white p-2 rounded-lg text-sm outline-none border border-yellow-300">
-                    </div>
-                    <button onclick="salvarEvento()" class="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-black transition">Salvar (Inicia Bloqueado 🔒)</button>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-bold ml-4 text-gray-500 uppercase">Responsável</label>
+                    <input type="text" id="pai" placeholder="Nome completo do Pai/Mãe" class="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 ring-blue-500">
                 </div>
-            </div>
-
-            <div class="bg-green-50 p-6 rounded-3xl border border-green-100">
-                <h3 class="font-black text-green-800 text-lg mb-4 flex items-center gap-2">📂 Banco de Alunos</h3>
-                <textarea id="jsonAlunos" rows="3" class="w-full p-3 rounded-xl text-xs font-mono outline-none border border-green-200" placeholder='Cole o JSON aqui...'></textarea>
-                <button onclick="importarAlunos()" class="w-full mt-2 bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition">Importar Lista</button>
-            </div>
-
-            <div class="bg-blue-50 p-6 rounded-3xl border border-blue-100 relative">
-                <h3 class="font-black text-blue-800 text-lg mb-4 flex items-center gap-2">🎟️ Ingresso Avulso</h3>
-                
-                <div id="avulsoInfo" class="hidden mb-3 p-2 bg-white rounded border border-blue-200 text-xs text-blue-800 font-bold text-center">
-                    Selecione um evento
-                </div>
-
-                <div class="space-y-3">
-                    <select id="selEventos" onchange="atualizarInfoEstoque()" class="w-full p-3 bg-white rounded-xl text-sm outline-none text-slate-700 font-bold">
-                        <option value="">Selecione o Evento...</option>
-                    </select>
-                    
-                    <div class="flex gap-2">
-                        <div class="w-2/3">
-                            <input id="avMat" type="number" placeholder="Matrícula" class="w-full p-3 bg-white rounded-xl text-sm outline-none" onblur="buscarAlunoAvulso(this.value)">
-                        </div>
-                        <div class="w-1/3 relative">
-                            <label class="absolute -top-2 left-2 bg-blue-100 px-1 text-[10px] font-bold text-blue-800 rounded">QTD</label>
-                            <input id="avQtdGerar" type="number" value="1" min="1" max="100" class="w-full p-3 bg-white rounded-xl text-sm outline-none font-bold text-center border border-blue-200 text-blue-900">
-                        </div>
-                    </div>
-
-                    <input id="avAluno" type="text" placeholder="Nome" class="w-full p-3 bg-white rounded-xl text-sm outline-none font-bold text-blue-800">
-                    <input id="avResp" type="text" placeholder="Responsável" class="w-full p-3 bg-white rounded-xl text-sm outline-none">
-                    
-                    <button onclick="gerarAvulso()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200">
-                        Gerar Ingressos
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <div class="lg:col-span-2 space-y-6">
-            
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                <h4 class="font-bold text-slate-700 mb-2 text-sm uppercase px-2">Gerenciar Eventos (Lista Compacta)</h4>
-                
-                <div class="overflow-x-auto overflow-y-auto max-h-[300px] custom-scrollbar border border-gray-100 rounded-lg">
-                    <table class="w-full text-left text-sm text-gray-600">
-                        <thead class="bg-gray-50 text-xs uppercase text-gray-500 font-bold sticky top-0">
-                            <tr>
-                                <th class="p-3">Evento</th>
-                                <th class="p-3 w-32">Vendas</th>
-                                <th class="p-3 text-center">Status</th>
-                                <th class="p-3 text-right">Ação</th>
-                            </tr>
-                        </thead>
-                        <tbody id="listaEventosTabela" class="divide-y divide-gray-100 bg-white">
-                            <tr><td colspan="4" class="p-4 text-center text-xs">Carregando...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 flex flex-col h-[600px]"> 
-                <div class="p-6 border-b border-gray-100 flex justify-between items-center shrink-0">
-                    <div>
-                        <h3 class="font-black text-slate-800 text-lg">Ingressos Emitidos</h3>
-                        <p class="text-xs text-gray-400 font-bold mt-1">
-                            Total: <span id="totalGeral">0</span> | 
-                            Avulsos: <span id="totalAvulsos" class="text-blue-600">0</span> | 
-                            Validados: <span id="totalValidados" class="text-green-600">0</span>
-                        </p>
-                    </div>
-                    <input type="text" id="busca" onkeyup="filtrarTabela()" placeholder="🔍 Buscar nome..." class="p-2 bg-gray-50 rounded-lg text-sm border focus:ring-2 ring-blue-500 outline-none w-48">
+                <div>
+                    <label class="text-xs font-bold ml-4 text-gray-500 uppercase">E-mail</label>
+                    <input type="email" id="email" placeholder="Para receber o PDF" class="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 ring-blue-500">
                 </div>
                 
-                <div class="overflow-y-auto overflow-x-auto flex-1 custom-scrollbar">
-                    <table class="w-full text-left text-sm text-gray-600">
-                        <thead class="bg-gray-50 text-xs uppercase text-gray-400 font-bold sticky top-0 z-10">
-                            <tr>
-                                <th class="p-4 bg-gray-50">Aluno</th>
-                                <th class="p-4 bg-gray-50">Evento</th>
-                                <th class="p-4 bg-gray-50">Tipo</th>
-                                <th class="p-4 bg-gray-50 text-center">Status</th>
-                                <th class="p-4 bg-gray-50 text-right">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabelaIngressos" class="divide-y divide-gray-100">
-                            <tr><td class="p-4">Carregando dados...</td></tr>
-                        </tbody>
-                    </table>
+                <div id="filhos" class="space-y-3 pt-2 border-t border-gray-100">
+                    </div>
+
+                <button onclick="addFilho()" class="text-blue-600 font-bold text-xs w-full py-2 uppercase hover:bg-blue-50 rounded-xl transition">+ Incluir outro aluno</button>
+                
+                <div class="pt-4">
+                    <button onclick="processar()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition">BAIXAR PDF AGORA</button>
+                    <button onclick="location.reload()" class="w-full py-3 text-gray-400 text-xs font-bold uppercase mt-2">Cancelar</button>
                 </div>
             </div>
         </div>
     </div>
 
+    <div id="qrcode-temp" style="display:none"></div>
+
     <script>
+        // CONFIGURAÇÕES GERAIS
+        let clicks = 0;
+        function acessoSecreto() {
+            clicks++;
+            if (clicks === 5) { if(confirm("Ir para Admin?")) window.location.href = "cadastrar_evento.html"; clicks = 0; }
+            setTimeout(() => { clicks = 0; }, 2000);
+        }
+
         const firebaseConfig = { 
             apiKey: "AIzaSyBFDlEOhuUerWjSfK_mPVxoj5sGbSDhe9k", 
             authDomain: "ingressoscdc-9ce88.firebaseapp.com", 
@@ -166,290 +80,180 @@
         const db = firebase.database();
         emailjs.init("RmJx_2rhtntD90vsH");
 
-        let todosEventos = {}; 
-        let todosIngressos = [];
-        let contagemAvulsosPorEvento = {}; 
+        let currentEv = null;
 
-        // 1. CARREGAR DADOS
-        function carregarTudo() {
-            db.ref('eventos').on('value', snapEventos => {
-                todosEventos = {};
-                if(snapEventos.exists()) {
-                    snapEventos.forEach(i => todosEventos[i.key] = { key: i.key, ...i.val() });
-                }
-                
-                db.ref('ingressos').on('value', snapIngressos => {
-                    todosIngressos = [];
-                    contagemAvulsosPorEvento = {}; 
-                    if(snapIngressos.exists()) {
-                        snapIngressos.forEach(i => {
-                            const ing = { key: i.key, ...i.val() };
-                            todosIngressos.push(ing);
-                            
-                            if(ing.tipo === 'Avulso') {
-                                if(!contagemAvulsosPorEvento[ing.evento]) contagemAvulsosPorEvento[ing.evento] = 0;
-                                contagemAvulsosPorEvento[ing.evento]++;
-                            }
-                        });
-                    }
-                    atualizarUIEventos();
-                    renderizarTabelaIngressos(todosIngressos);
-                    atualizarInfoEstoque();
-                });
-            });
-        }
-        carregarTudo();
-
-        // 2. ATUALIZAR LISTA DE EVENTOS (AGORA EM FORMATO DE TABELA)
-        function atualizarUIEventos() {
-            const tbodyEventos = document.getElementById('listaEventosTabela'); // Mudamos para Tbody
-            const sel = document.getElementById('selEventos');
-            const selecaoAtual = sel.value; 
-
-            tbodyEventos.innerHTML = "";
-            sel.innerHTML = '<option value="">Selecione o Evento...</option>';
-
-            const eventosArray = Object.values(todosEventos);
-            if(eventosArray.length === 0) { tbodyEventos.innerHTML = "<tr><td colspan='4' class='p-4 text-center text-xs text-gray-400'>Nenhum evento criado.</td></tr>"; return; }
-
-            eventosArray.forEach(ev => {
-                const vendidos = contagemAvulsosPorEvento[ev.nome] || 0;
-                const limite = parseInt(ev.estoque) || 0;
-                const disponivel = limite - vendidos;
-                const statusTexto = limite > 0 ? `Restam ${Math.max(0, disponivel)}` : "Ilimitado";
-                
-                const isLiberado = ev.liberado === true;
-                const btnClass = isLiberado ? 'bg-green-100 text-green-700 border-green-200' : 'bg-slate-100 text-slate-500 border-slate-200';
-                const iconTrava = isLiberado ? '🔓 Aberto' : '🔒 Fechado';
-
-                const opt = document.createElement('option'); 
-                opt.value = ev.nome; opt.text = `${ev.nome} (${statusTexto})`; 
-                sel.appendChild(opt);
-                
-                let porcentagem = 0; let corBarra = 'bg-blue-600';
-                if(limite > 0) {
-                    porcentagem = Math.min((vendidos / limite) * 100, 100);
-                    if(porcentagem >= 100) corBarra = 'bg-gray-800'; 
-                    else if(porcentagem > 90) corBarra = 'bg-red-600';
-                }
-
-                // GERA A LINHA DA TABELA
-                tbodyEventos.innerHTML += `
-                <tr class="hover:bg-slate-50 transition group">
-                    <td class="p-3">
-                        <div class="font-bold text-slate-800 text-sm truncate w-40" title="${ev.nome}">${ev.nome}</div>
-                        <div class="text-[10px] text-gray-400 font-mono">${ev.data}</div>
-                    </td>
-                    <td class="p-3">
-                        <div class="flex justify-between text-[10px] mb-1 font-bold text-gray-500">
-                            <span>${vendidos}</span>
-                            <span>${limite>0 ? limite : '∞'}</span>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-1.5">
-                            <div class="${corBarra} h-1.5 rounded-full" style="width: ${porcentagem}%"></div>
-                        </div>
-                    </td>
-                    <td class="p-3 text-center">
-                         <button onclick="alternarTrava('${ev.key}', ${isLiberado})" class="text-[10px] font-bold border px-2 py-1 rounded w-20 ${btnClass} hover:opacity-80 transition">
-                            ${iconTrava}
-                        </button>
-                    </td>
-                    <td class="p-3 text-right">
-                        <button onclick="excluirEvento('${ev.key}')" class="text-xs text-gray-300 hover:text-red-500 transition p-2" title="Excluir">
-                            🗑️
-                        </button>
-                    </td>
-                </tr>`;
-            });
-            if(selecaoAtual) sel.value = selecaoAtual;
+        // INICIA COM UM CAMPO DE ALUNO
+        function initModal() {
+            document.getElementById('filhos').innerHTML = "";
+            addFilho();
         }
 
-        function alternarTrava(key, statusAtual) {
-            db.ref('eventos/'+key).update({ liberado: !statusAtual });
-        }
-
-        function atualizarInfoEstoque() {
-            const nomeEvento = document.getElementById('selEventos').value;
-            const divInfo = document.getElementById('avulsoInfo');
-            if(!nomeEvento) { divInfo.classList.add('hidden'); return; }
-
-            const evData = Object.values(todosEventos).find(e => e.nome === nomeEvento);
-            if(evData) {
-                const limite = parseInt(evData.estoque) || 0;
-                const vendidos = contagemAvulsosPorEvento[nomeEvento] || 0;
-                const restantes = limite - vendidos;
-                divInfo.classList.remove('hidden');
-                let textoStatus = !evData.liberado ? "<span class='block text-gray-500 mb-1'>🔒 O Aluno vê 'EM BREVE'</span>" : "";
-                if(limite > 0) {
-                    if(restantes <= 0) divInfo.innerHTML = `${textoStatus}⛔ ESGOTADO! (${vendidos}/${limite})`;
-                    else divInfo.innerHTML = `${textoStatus}✅ DISPONÍVEIS: ${restantes} (Total: ${limite})`;
-                } else {
-                    divInfo.innerHTML = `${textoStatus}♾️ Estoque Ilimitado`;
-                }
-            }
-        }
-
-        async function gerarAvulso() {
-            const evNome = document.getElementById('selEventos').value;
-            const al = document.getElementById('avAluno').value;
-            const mt = document.getElementById('avMat').value;
-            const rp = document.getElementById('avResp').value || "Escola";
-            const qtd = parseInt(document.getElementById('avQtdGerar').value) || 1;
-
-            if(!evNome || !al || !mt) return alert("Preencha todos os campos!");
-            if(qtd < 1) return alert("Mínimo 1 ingresso.");
-            const eventoObj = Object.values(todosEventos).find(e => e.nome === evNome);
-            if(!eventoObj) return alert("Evento não encontrado.");
-            const limite = parseInt(eventoObj.estoque) || 0;
-            const vendidos = contagemAvulsosPorEvento[evNome] || 0;
-            const disponivel = limite - vendidos;
-            if(limite > 0) {
-                if((vendidos + qtd) > limite) {
-                    alert(`⛔ ESTOQUE INSUFICIENTE!\nVocê pediu ${qtd}, mas só restam ${Math.max(0, disponivel)} no estoque AVULSO.`);
-                    return; 
-                }
-            }
-            if(qtd > 5) alert("Gerando ingressos, aguarde...");
-            const time = Date.now();
-            for(let i = 0; i < qtd; i++) {
-                const id = `${mt}-AVULSO-${time.toString().slice(-5)}${i}`; 
-                await db.ref('ingressos/'+id).set({ 
-                    aluno: al, 
-                    matricula: mt, 
-                    responsavel: rp, 
-                    evento: evNome, 
-                    utilizado: false, 
-                    tipo: 'Avulso',
-                    data: new Date().toISOString() 
-                });
-            }
-            alert(`${qtd} ingresso(s) gerado(s)!`);
-            document.getElementById('avQtdGerar').value = "1"; 
-        }
-
-        function salvarEvento() {
-            const nome = document.getElementById('evNome').value; 
-            const data = document.getElementById('evData').value;
-            const estoque = document.getElementById('evEstoque').value; 
-            const img = document.getElementById('evImg').value;
-            const bgPdf = document.getElementById('evBg').value; 
-            const zap = document.getElementById('evZap').value;
-            const qtdPorAluno = document.getElementById('evQtd').value;
-
-            if(!nome || !data) return alert("Preencha Nome e Data!");
+        // --- NOVA FUNÇÃO: VERIFICA MATRÍCULA NO BANCO ---
+        async function verificarMatricula(inputMat) {
+            const mat = inputMat.value;
+            // Acha o campo de nome correspondente (está no irmão anterior)
+            const campoNome = inputMat.previousElementSibling; 
             
-            db.ref('eventos').push({ 
-                nome, 
-                data, 
-                imagem: img, 
-                bgPdf, 
-                estoque: parseInt(estoque) || 0, 
-                limit_ingressos: parseInt(qtdPorAluno) || 1, 
-                contato: zap, 
-                liberado: false 
-            });
-            alert("Evento Criado (Bloqueado)!"); location.reload();
+            if(mat.length < 3) return; // Só busca se tiver 3+ dígitos
+
+            campoNome.placeholder = "Buscando...";
+            
+            // 1. BUSCA DADOS DO ALUNO
+            const snap = await db.ref('alunos_db/' + mat).once('value');
+            
+            if(snap.exists()) {
+                const dados = snap.val();
+                campoNome.value = dados.nome + (dados.turma ? ` (${dados.turma})` : "");
+                campoNome.readOnly = true; // TRAVA O NOME
+                campoNome.classList.add("bg-green-50", "text-green-800"); // VISUAL DE SUCESSO
+                
+                // 2. VERIFICA SE JÁ PEGOU INGRESSO PRA ESSE EVENTO
+                verificarDuplicidade(mat, inputMat);
+
+            } else {
+                campoNome.value = "";
+                campoNome.placeholder = "Aluno não encontrado! Verifique a matrícula.";
+                campoNome.readOnly = false; // Destrava caso tenha digitado errado
+                campoNome.classList.remove("bg-green-50", "text-green-800");
+                alert("Matrícula não cadastrada no sistema.");
+                inputMat.value = ""; // Limpa a matrícula errada
+            }
         }
 
-        function renderizarTabelaIngressos(lista) {
-            const tbody = document.getElementById('tabelaIngressos'); tbody.innerHTML = "";
-            let qtd = 0; 
-            let avulsos = 0; 
-            let validados = 0;
+        async function verificarDuplicidade(matricula, elementoInput) {
+            // Busca ingressos que tenham essa matrícula
+            const tickets = await db.ref('ingressos').orderByChild('matricula').equalTo(matricula).once('value');
+            
+            let jaPegou = false;
+            if(tickets.exists()) {
+                tickets.forEach(t => {
+                    if(t.val().evento === currentEv.nome) {
+                        jaPegou = true;
+                    }
+                });
+            }
 
-            if(lista.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-gray-400">Nenhum ingresso.</td></tr>`; return; }
+            if(jaPegou) {
+                alert(`ATENÇÃO: A matrícula ${matricula} JÁ POSSUI ingresso para este evento!`);
+                elementoInput.value = ""; // Limpa matrícula
+                elementoInput.previousElementSibling.value = ""; // Limpa nome
+            }
+        }
 
-            lista.slice().reverse().forEach(ing => {
-                qtd++; 
-                if(ing.tipo === 'Avulso') avulsos++;
-                if(ing.status === 'validado') validados++;
+        function addFilho() {
+            const div = document.createElement('div');
+            div.className = "p-4 bg-blue-50 rounded-2xl border border-blue-100 mt-2 relative";
+            // Note o onchange na matrícula
+            div.innerHTML = `
+                <input type="text" placeholder="Nome do Aluno (Preenchimento Automático)" readonly class="n-aluno w-full bg-transparent font-bold outline-none text-blue-900 placeholder-blue-300 mb-2 cursor-not-allowed">
+                <input type="number" placeholder="Digite a Matrícula e aperte Tab" class="m-aluno w-full bg-white p-2 rounded-lg border border-blue-200 text-sm outline-none font-bold" onchange="verificarMatricula(this)">
+                <p class="text-[10px] text-blue-400 mt-1">Digite a matrícula para buscar o nome.</p>
+            `;
+            document.getElementById('filhos').appendChild(div);
+        }
 
-                const tipoBadge = ing.tipo === 'Avulso' 
-                    ? '<span class="text-[10px] bg-purple-100 text-purple-700 px-2 py-1 rounded font-bold">AVULSO</span>' 
-                    : '<span class="text-[10px] bg-gray-100 text-gray-500 px-2 py-1 rounded font-bold">ALUNO</span>';
+        // CARREGA EVENTOS
+        db.ref('eventos').on('value', snap => {
+            const cont = document.getElementById('listaEventos'); cont.innerHTML = "";
+            if(!snap.exists()){ cont.innerHTML = `<p class="col-span-3 text-center text-gray-400 mt-10">Nenhum evento.</p>`; return; }
 
-                let statusHtml = "";
-                let rowColor = "border-b border-gray-50 hover:bg-slate-50"; 
-
-                if (ing.status === 'validado') {
-                    rowColor = "border-b border-green-50 bg-green-50/40 hover:bg-green-100/50"; 
-                    const hora = ing.horario_validacao ? new Date(ing.horario_validacao).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '??:??';
-                    statusHtml = `
-                        <div class="flex flex-col items-center">
-                            <span class="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded border border-green-200 font-bold uppercase tracking-wide">✅ Validado</span>
-                            <span class="text-[10px] text-green-600 font-mono mt-1">${hora}</span>
-                        </div>`;
+            snap.forEach(i => {
+                const ev = i.val();
+                let btnHtml = "";
+                if(ev.contato) {
+                    const msg = `Olá, quero comprar ingressos para *${ev.nome}*.`;
+                    const link = `https://wa.me/${ev.contato}?text=${encodeURIComponent(msg)}`;
+                    btnHtml = `<a href="${link}" target="_blank" class="block text-center w-full bg-green-600 text-white py-4 rounded-2xl font-bold hover:bg-green-700 transition">💲 COMPRAR INGRESSO</a>`;
                 } else {
-                    statusHtml = `<div class="flex justify-center"><span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded border border-blue-100 font-bold uppercase tracking-wide">🎟️ Liberado</span></div>`;
+                    btnHtml = `<button onclick="openM('${i.key}')" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-black transition">🎟️ GARANTIR INGRESSO</button>`;
                 }
 
-                tbody.innerHTML += `
-                    <tr class="${rowColor} transition">
-                        <td class="p-4"><div class="font-bold text-slate-800">${ing.aluno}</div><div class="text-xs text-slate-400 font-mono">#${ing.key}</div></td>
-                        <td class="p-4"><span class="text-xs font-bold uppercase bg-gray-100 text-gray-600 px-2 py-1 rounded-md">${ing.evento}</span></td>
-                        <td class="p-4">${tipoBadge}</td>
-                        <td class="p-4 text-center">${statusHtml}</td>
-                        <td class="p-4 text-right">
-                            <button onclick="reenviarEmail('${ing.key}')" class="mr-2 text-slate-400 hover:text-purple-600 transition" title="Reenviar Email">📧</button>
-                            <button onclick="reimprimir('${ing.key}')" class="mr-2 text-slate-400 hover:text-blue-600 transition" title="Baixar Novamente">⬇️</button>
-                            <button onclick="excluirIngresso('${ing.key}')" class="text-slate-400 hover:text-red-500 transition" title="Excluir">🗑️</button>
-                        </td>
-                    </tr>`;
+                cont.innerHTML += `
+                <div class="bg-white rounded-[2.5rem] p-4 shadow-sm hover:shadow-xl transition duration-300 border border-gray-100">
+                    <div class="h-48 rounded-[2rem] bg-cover bg-center mb-4" style="background-image: url('${ev.imagem || 'https://placehold.co/600x400?text=Evento'}')"></div>
+                    <div class="px-2 pb-2">
+                        <h3 class="text-xl font-black text-gray-800 leading-tight mb-1">${ev.nome}</h3>
+                        <p class="text-xs font-bold text-blue-500 uppercase tracking-wider mb-4">${ev.data}</p>
+                        ${btnHtml}
+                    </div>
+                </div>`;
             });
-            document.getElementById('totalGeral').innerText = qtd; 
-            document.getElementById('totalAvulsos').innerText = avulsos;
-            document.getElementById('totalValidados').innerText = validados; 
+        });
+
+        async function openM(key) {
+            currentEv = (await db.ref('eventos/'+key).once('value')).val();
+            document.getElementById('nomeEvTitle').innerText = currentEv.nome;
+            initModal(); // Reseta os campos
+            document.getElementById('modalIngresso').classList.remove('hidden');
         }
 
-        async function reenviarEmail(key) {
-            const ing = todosIngressos.find(i => i.key === key);
-            if(!ing) return alert("Ingresso não encontrado.");
-            if(!ing.email) return alert("Este ingresso não tem e-mail cadastrado (Avulso?).");
+        // --- PROCESSAMENTO (COM VALIDAÇÃO DUPLA) ---
+        async function processar() {
+            const pai = document.getElementById('pai').value;
+            const mail = document.getElementById('email').value;
+            const nomes = document.querySelectorAll('.n-aluno');
+            const mats = document.querySelectorAll('.m-aluno');
 
-            if(!confirm(`Reenviar ingresso para: ${ing.email}?`)) return;
+            if(!pai || !mail) return alert("Preencha Responsável e E-mail!");
 
-            const templateParams = {
-                nome_aluno: ing.aluno,
-                turma: ing.turma || "N/A",
-                nome_responsavel: ing.responsavel,
-                evento: ing.evento,
-                codigo_ingresso: ing.key, 
-                to_email: ing.email
-            };
+            // Validação final: Checa se todos os nomes foram preenchidos (se matrícula foi válida)
+            for(let k=0; k<nomes.length; k++) {
+                if(nomes[k].value === "" || mats[k].value === "") {
+                    return alert("Verifique as matrículas! Todos os alunos devem ser identificados.");
+                }
+            }
 
-            emailjs.send("service_r1vrjkp", "template_4yvqw5g", templateParams)
-                .then(() => alert("✅ Email reenviado com sucesso!"))
-                .catch((err) => alert("❌ Erro ao enviar: " + JSON.stringify(err)));
+            window.scrollTo(0,0);
+            document.getElementById('modalIngresso').classList.add('hidden');
+            document.getElementById('overlay').classList.remove('hidden');
+            document.getElementById('statusMsg').innerText = "Processando...";
+
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                let fundoImg = await carregarImagemSegura(currentEv.bgPdf);
+                let totalIngressos = 0; let alunosList = [];
+
+                for(let i=0; i<nomes.length; i++) {
+                    const n = nomes[i].value; const m = mats[i].value;
+                    alunosList.push(n);
+                    const qtd = parseInt(currentEv.qtd) || 1;
+
+                    for(let j=1; j <= qtd; j++) {
+                        totalIngressos++; if(totalIngressos > 1) doc.addPage();
+                        if(fundoImg) { doc.addImage(fundoImg, 'JPEG', 0, 0, 210, 297); doc.setFillColor(255, 255, 255); doc.roundedRect(60, 70, 90, 100, 5, 5, 'F'); }
+                        
+                        const idUnico = `${m}-${j}`;
+                        doc.setTextColor(0,0,0); doc.setFontSize(16);
+                        doc.text(n.toUpperCase(), 105, 85, {align: 'center', maxWidth: 80});
+                        doc.setFontSize(10); doc.text(`INGRESSO ${j} / ${qtd}`, 105, 92, {align: 'center'});
+                        doc.text(`ID: ${idUnico}`, 105, 97, {align: 'center'});
+
+                        const qrDiv = document.getElementById('qrcode-temp'); qrDiv.innerHTML = "";
+                        new QRCode(qrDiv, { text: idUnico, width: 256, height: 256 });
+                        await new Promise(r => setTimeout(r, 100));
+                        const qrCanvas = qrDiv.querySelector('canvas');
+                        if(qrCanvas) doc.addImage(qrCanvas.toDataURL("image/png"), 'PNG', 75, 110, 60, 60);
+
+                        await db.ref('ingressos/' + idUnico).set({ aluno: n, matricula: m, responsavel: pai, evento: currentEv.nome, utilizado: false, data: new Date().toISOString() });
+                    }
+                }
+
+                doc.save(`Ingressos_${pai.replace(/ /g,'_')}.pdf`);
+                emailjs.send("service_r1vrjkp", "template_4yvqw5g", { nome_responsavel: pai, to_email: mail, evento: currentEv.nome, message: `Confirmado: ${alunosList.join(", ")}` });
+
+                document.getElementById('loader').classList.add('hidden'); document.getElementById('successIcon').classList.remove('hidden');
+                document.getElementById('statusMsg').innerText = "Sucesso!"; document.getElementById('subMsg').innerText = "Verifique o Download.";
+                setTimeout(() => location.reload(), 3000);
+
+            } catch(e) {
+                console.error(e); alert("Erro: " + e.message); location.reload();
+            }
         }
 
-        function excluirEvento(key) { if(confirm("Deseja excluir este evento?")) db.ref('eventos/'+key).remove(); }
-        function excluirIngresso(key) { if(confirm("Apagar ingresso? Isso invalidará o QR Code.")) db.ref('ingressos/'+key).remove(); }
-        function importarAlunos() { try { const lista = JSON.parse(document.getElementById('jsonAlunos').value); let ups = {}; lista.forEach(a => { if(a.matricula) ups['/alunos_db/'+a.matricula] = { nome: a.nome, turma: a.turma||"" }; }); db.ref().update(ups).then(()=>alert("Importado!")); } catch(e){ alert("JSON Inválido"); } }
-        async function buscarAlunoAvulso(mat) { if(!mat) return; const s = await db.ref('alunos_db/'+mat).once('value'); if(s.exists()) document.getElementById('avAluno').value = s.val().nome; }
-        function filtrarTabela() { const v = document.getElementById('busca').value.toLowerCase(); document.querySelectorAll('#tabelaIngressos tr').forEach(r => r.style.display = r.innerText.toLowerCase().includes(v) ? '' : 'none'); }
-        
-        async function reimprimir(key) { 
-            const t = todosIngressos.find(i => i.key === key);
-            const evInfo = Object.values(todosEventos).find(e => e.nome === t.evento);
-            const escala = 4; const larguraOriginal = 200; const alturaOriginal = 300; const w = larguraOriginal * escala; const h = alturaOriginal * escala;
-            let bg = null; if(evInfo && evInfo.bgPdf) { bg = new Image(); bg.crossOrigin="anonymous"; bg.src = evInfo.bgPdf; await new Promise(r => { bg.onload=r; bg.onerror=r; }); }
-            const c = document.createElement('canvas'); const x = c.getContext('2d'); c.width = w; c.height = h; 
-            x.fillStyle='#fff'; x.fillRect(0,0,w,h);
-            if(bg) { const ratio = Math.max(w/bg.width, h/bg.height); const centerShift_x = (w - bg.width*ratio) / 2; const centerShift_y = (h - bg.height*ratio) / 2; x.drawImage(bg, 0, 0, bg.width, bg.height, centerShift_x, centerShift_y, bg.width*ratio, bg.height*ratio); }
-            x.fillStyle='rgba(255,255,255,0.95)'; x.beginPath(); x.roundRect(10*escala, 130*escala, 180*escala, 160*escala, 10*escala); x.fill();
-            x.strokeStyle = '#e2e8f0'; x.lineWidth = 2 * escala; x.stroke();
-            x.fillStyle='#000'; x.textAlign='center'; x.font = `bold ${12 * escala}px sans-serif`; x.fillText(t.evento.substring(0,25), w/2, 155 * escala);
-            let fs = 18 * escala; x.font = `900 ${fs}px sans-serif`; x.fillStyle = '#1e293b'; const nomeUp = t.aluno.toUpperCase();
-            while (x.measureText(nomeUp).width > (170 * escala) && fs > (8 * escala)) { fs -= escala; x.font = `900 ${fs}px sans-serif`; }
-            x.fillText(nomeUp, w/2, 185 * escala);
-            x.font = `${10 * escala}px monospace`; x.fillStyle='#64748b'; x.fillText(key, w/2, 205 * escala);
-            const q = document.createElement('div'); const qrSize = 80 * escala;
-            new QRCode(q, { text: key, width: qrSize, height: qrSize, colorDark: "#000000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.H }); 
-            await new Promise(r=>setTimeout(r, 200));
-            const canvasQr = q.querySelector('canvas');
-            if(canvasQr) { x.drawImage(canvasQr, (w - qrSize)/2, 215 * escala); }
-            const link = document.createElement('a'); link.href = c.toDataURL('image/jpeg', 1.0); link.download = `Ingresso-${t.aluno.replace(/\s+/g, '_')}.jpg`; link.click();
-        }
+        function carregarImagemSegura(url) { return new Promise((r) => { if(!url) return r(null); const i = new Image(); i.crossOrigin="anonymous"; i.onload=()=> {const c=document.createElement("canvas");c.width=i.width;c.height=i.height;c.getContext("2d").drawImage(i,0,0);r(c.toDataURL("image/jpeg",0.7))}; i.onerror=()=>r(null); i.src=url; }); }
     </script>
 </body>
 </html>
+
