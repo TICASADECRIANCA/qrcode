@@ -153,39 +153,62 @@
         }
 
         // CARREGA EVENTOS
-        db.ref('eventos').on('value', snap => {
-            const cont = document.getElementById('listaEventos'); cont.innerHTML = "";
-            if(!snap.exists()){ cont.innerHTML = `<p class="col-span-3 text-center text-gray-400 mt-10">Nenhum evento.</p>`; return; }
+        // CARREGA EVENTOS
+db.ref('eventos').on('value', snap => {
+    const cont = document.getElementById('listaEventos'); 
+    cont.innerHTML = "";
+    
+    if(!snap.exists()){ 
+        cont.innerHTML = `<p class="col-span-3 text-center text-gray-400 mt-10">Nenhum evento disponível no momento.</p>`; 
+        return; 
+    }
 
-            snap.forEach(i => {
-                const ev = i.val();
-                let btnHtml = "";
-                if(ev.contato) {
-                    const msg = `Olá, quero comprar ingressos para *${ev.nome}*.`;
-                    const link = `https://wa.me/${ev.contato}?text=${encodeURIComponent(msg)}`;
-                    btnHtml = `<a href="${link}" target="_blank" class="block text-center w-full bg-green-600 text-white py-4 rounded-2xl font-bold hover:bg-green-700 transition">💲 COMPRAR INGRESSO</a>`;
-                } else {
-                    btnHtml = `<button onclick="openM('${i.key}')" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-black transition">🎟️ GARANTIR INGRESSO</button>`;
-                }
+    snap.forEach(i => {
+        const ev = i.val();
+        const key = i.key;
+        const isLiberado = ev.liberado === true; // Verifica o status do Admin
 
-                cont.innerHTML += `
-                <div class="bg-white rounded-[2.5rem] p-4 shadow-sm hover:shadow-xl transition duration-300 border border-gray-100">
-                    <div class="h-48 rounded-[2rem] bg-cover bg-center mb-4" style="background-image: url('${ev.imagem || 'https://placehold.co/600x400?text=Evento'}')"></div>
-                    <div class="px-2 pb-2">
-                        <h3 class="text-xl font-black text-gray-800 leading-tight mb-1">${ev.nome}</h3>
-                        <p class="text-xs font-bold text-blue-500 uppercase tracking-wider mb-4">${ev.data}</p>
-                        ${btnHtml}
-                    </div>
-                </div>`;
-            });
-        });
+        let btnHtml = "";
+        
+        // Lógica de Botão baseada no Status e Tipo (Pago/Gratuito)
+        if (!isLiberado) {
+            btnHtml = `<button class="w-full bg-gray-300 text-gray-500 py-4 rounded-2xl font-bold cursor-not-allowed" disabled>🔒 EM BREVE</button>`;
+        } else if(ev.contato) {
+            const msg = `Olá, quero comprar ingressos para *${ev.nome}*.`;
+            const link = `https://wa.me/${ev.contato}?text=${encodeURIComponent(msg)}`;
+            btnHtml = `<a href="${link}" target="_blank" class="block text-center w-full bg-green-600 text-white py-4 rounded-2xl font-bold hover:bg-green-700 transition">💲 COMPRAR INGRESSO</a>`;
+        } else {
+            btnHtml = `<button onclick="openM('${key}')" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-black transition">🎟️ GARANTIR INGRESSO</button>`;
+        }
+
+        cont.innerHTML += `
+        <div class="bg-white rounded-[2.5rem] p-4 shadow-sm hover:shadow-xl transition duration-300 border border-gray-100 ${!isLiberado ? 'opacity-75' : ''}">
+            <div class="h-48 rounded-[2rem] bg-cover bg-center mb-4 relative" style="background-image: url('${ev.imagem || 'https://placehold.co/600x400?text=Evento'}')">
+                ${!isLiberado ? '<div class="absolute inset-0 bg-white/40 backdrop-blur-[2px] rounded-[2rem] flex items-center justify-center"><span class="bg-white px-4 py-2 rounded-full shadow-sm font-black text-slate-800 text-xs">BLOQUEADO</span></div>' : ''}
+            </div>
+            <div class="px-2 pb-2">
+                <h3 class="text-xl font-black text-gray-800 leading-tight mb-1">${ev.nome}</h3>
+                <p class="text-xs font-bold text-blue-500 uppercase tracking-wider mb-4">${ev.data}</p>
+                ${btnHtml}
+            </div>
+        </div>`;
+    });
+});
 
         async function openM(key) {
-            currentEv = (await db.ref('eventos/'+key).once('value')).val();
-            document.getElementById('nomeEvTitle').innerText = currentEv.nome;
-            initModal(); // Reseta os campos
-            document.getElementById('modalIngresso').classList.remove('hidden');
-        }
+    const snap = await db.ref('eventos/'+key).once('value');
+    currentEv = snap.val();
+    
+    // Verificação de segurança extra
+    if(!currentEv.liberado) {
+        alert("Este evento ainda não está disponível para inscrições.");
+        return;
+    }
+
+    document.getElementById('nomeEvTitle').innerText = currentEv.nome;
+    initModal(); 
+    document.getElementById('modalIngresso').classList.remove('hidden');
+}
 
         // --- PROCESSAMENTO (COM VALIDAÇÃO DUPLA) ---
         async function processar() {
@@ -256,5 +279,6 @@
     </script>
 </body>
 </html>
+
 
 
