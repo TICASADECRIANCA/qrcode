@@ -3,157 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Admin - CASAQR</title>
+    <title>CASAQR - Painel Administrativo</title>
+    
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z'></path></svg>">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
     <style>
-        /* Barras de rolagem mais bonitas */
-        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #2563eb; }
+        input:checked + .slider:before { transform: translateX(20px); }
     </style>
 </head>
-<body class="bg-slate-100 font-sans pb-20">
+<body class="min-h-screen flex flex-col">
 
-    <nav class="bg-slate-900 text-white p-4 px-8 flex justify-between items-center shadow-lg sticky top-0 z-50">
-        <div class="font-black italic text-xl">CASAQR <span class="text-blue-400">ADMIN</span></div>
-        <div class="flex gap-3">
-            <a href="validar.html" target="_blank" class="px-4 py-2 bg-green-600 rounded-lg text-xs font-bold hover:bg-green-500 transition border border-green-400">📲 Abrir Validador</a>
-            <a href="index.html" target="_blank" class="px-4 py-2 bg-blue-600 rounded-lg text-xs font-bold hover:bg-blue-500 transition">👀 Ver Página de ingressos</a>
+    <nav class="bg-slate-900 text-white p-4 px-6 md:px-12 flex justify-between items-center shadow-xl sticky top-0 z-50">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                </svg>
+            </div>
+            <div class="font-extrabold text-xl tracking-tighter uppercase">CASAQR <span class="text-blue-400 font-medium text-xs ml-1">Admin</span></div>
+        </div>
+        <div class="flex gap-4">
+            <a href="index.html" class="text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition">Ver Portal</a>
+            <button onclick="logout()" class="text-xs font-bold uppercase tracking-widest text-red-400">Sair</button>
         </div>
     </nav>
 
-    <div class="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4">
-
-        <div class="space-y-6">
-            
-            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-                <h3 class="font-black text-slate-800 text-lg mb-4 flex items-center gap-2">📅 Criar Evento</h3>
-                <div class="space-y-3">
-                    <input id="evNome" type="text" placeholder="Nome do Evento" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-500">
-                    <input id="evData" type="text" placeholder="Data (Ex: 25/10)" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-500">
-                    
-                    <div class="grid grid-cols-2 gap-2">
-                        <div class="relative">
-                            <label class="text-[10px] font-bold text-gray-400 absolute top-1 left-2">ESTOQUE AVULSO</label>
-                            <input id="evEstoque" type="number" placeholder="Ex: 300" class="w-full pt-5 pb-2 px-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-500 font-bold text-blue-900">
-                        </div>
-                        <div class="relative">
-                            <label class="text-[10px] font-bold text-gray-400 absolute top-1 left-2">QTD POR ALUNO</label>
-                            <input id="evQtd" type="number" placeholder="Ex: 2" value="1" min="1" class="w-full pt-5 pb-2 px-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-500 font-bold text-blue-900">
-                        </div>
-                    </div>
-
-                    <input id="evImg" type="text" placeholder="Link da Imagem (URL)" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-500">
-                    <input id="evBg" type="text" placeholder="Link Fundo PDF (Opcional)" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-500">
-                    
-                    <div class="p-3 bg-yellow-50 rounded-xl border border-yellow-200">
-                       
-                        --<p class="text-xs font-bold text-yellow-700 mb-1">É pago?</p>
-                        <input id="evZap" type="text" placeholder="Zap (5511999...)" class="w-full bg-white p-2 rounded-lg text-sm outline-none border border-yellow-300">
-                    </div>
-                    <button onclick="salvarEvento()" class="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-black transition">Salvar (Inicia Bloqueado 🔒)</button>
-                </div>
-            </div>
-
-            <div class="bg-green-50 p-6 rounded-3xl border border-green-100">
-                <h3 class="font-black text-green-800 text-lg mb-4 flex items-center gap-2">📂 Banco de Alunos</h3>
-                <textarea id="jsonAlunos" rows="3" class="w-full p-3 rounded-xl text-xs font-mono outline-none border border-green-200" placeholder='Cole o JSON aqui...'></textarea>
-                <button onclick="importarAlunos()" class="w-full mt-2 bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition">Importar Lista</button>
-            </div>
-
-            <div class="bg-blue-50 p-6 rounded-3xl border border-blue-100 relative">
-                <h3 class="font-black text-blue-800 text-lg mb-4 flex items-center gap-2">🎟️ Ingresso Avulso</h3>
+    <main class="p-6 md:p-12 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <div class="lg:col-span-1 space-y-6">
+            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200">
+                <h2 class="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">
+                    <span class="w-2 h-6 bg-blue-600 rounded-full"></span> Novo Evento
+                </h2>
                 
-                <div id="avulsoInfo" class="hidden mb-3 p-2 bg-white rounded border border-blue-200 text-xs text-blue-800 font-bold text-center">
-                    Selecione um evento
-                </div>
-
-                <div class="space-y-3">
-                    <select id="selEventos" onchange="atualizarInfoEstoque()" class="w-full p-3 bg-white rounded-xl text-sm outline-none text-slate-700 font-bold">
-                        <option value="">Selecione o Evento...</option>
-                    </select>
+                <div class="space-y-4">
+                    <input type="text" id="nome" placeholder="Nome do Evento" class="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 ring-blue-500 outline-none font-semibold">
+                    <input type="text" id="data" placeholder="Data (ex: 20 de Outubro)" class="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 ring-blue-500 outline-none font-semibold">
+                    <input type="text" id="imagem" placeholder="URL da Imagem de Capa" class="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 ring-blue-500 outline-none font-semibold">
                     
-                    <div class="flex gap-2">
-                        <div class="w-2/3">
-                            <input id="avMat" type="number" placeholder="Matrícula" class="w-full p-3 bg-white rounded-xl text-sm outline-none" onblur="buscarAlunoAvulso(this.value)">
-                        </div>
-                        <div class="w-1/3 relative">
-                            <label class="absolute -top-2 left-2 bg-blue-100 px-1 text-[10px] font-bold text-blue-800 rounded">QTD</label>
-                            <input id="avQtdGerar" type="number" value="1" min="1" max="100" class="w-full p-3 bg-white rounded-xl text-sm outline-none font-bold text-center border border-blue-200 text-blue-900">
-                        </div>
+                    <div class="pt-4 border-t border-slate-100">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Configurações de Ingressos</label>
+                        <input type="number" id="limit" placeholder="Qtd de ingressos por aluno" class="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 ring-blue-500 outline-none font-semibold mb-3">
+                        <input type="text" id="contato" placeholder="WhatsApp p/ Venda (Opcional)" class="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 ring-blue-500 outline-none font-semibold">
                     </div>
 
-                    <input id="avAluno" type="text" placeholder="Nome" class="w-full p-3 bg-white rounded-xl text-sm outline-none font-bold text-blue-800">
-                    <input id="avResp" type="text" placeholder="Responsável" class="w-full p-3 bg-white rounded-xl text-sm outline-none">
-                    
-                    <button onclick="gerarAvulso()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200">
-                        Gerar Ingressos
+                    <button onclick="salvarEvento()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg shadow-blue-200 hover:bg-blue-700 transition transform active:scale-95 mt-4">
+                        CRIAR EVENTO AGORA
                     </button>
                 </div>
             </div>
         </div>
 
         <div class="lg:col-span-2 space-y-6">
-            
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[350px]">
-                <h4 class="font-bold text-slate-700 mb-2 text-sm uppercase px-2 shrink-0">Gerenciar Eventos (Lista)</h4>
-                
-                <div class="overflow-hidden flex flex-col flex-1 border border-gray-100 rounded-lg">
-                    <div class="bg-gray-100 text-xs uppercase text-gray-500 font-bold flex shrink-0">
-                        <div class="p-3 w-5/12">Evento</div>
-                        <div class="p-3 w-3/12">Vendas</div>
-                        <div class="p-3 w-2/12 text-center">Status</div>
-                        <div class="p-3 w-2/12 text-right">Ação</div>
-                    </div>
-                    
-                    <div class="overflow-y-auto custom-scrollbar flex-1 bg-white">
-                        <table class="w-full text-left text-sm text-gray-600">
-                            <tbody id="listaEventosTabela" class="divide-y divide-gray-100">
-                                <tr><td colspan="4" class="p-4 text-center text-xs">Carregando eventos...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200 min-h-[500px]">
+                <h2 class="text-xl font-black text-slate-800 mb-6 flex justify-between items-center">
+                    Gerenciar Eventos
+                    <span id="count" class="bg-slate-100 text-slate-500 text-xs px-3 py-1 rounded-full">0 cadastrados</span>
+                </h2>
 
-            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 flex flex-col h-[600px]"> 
-                <div class="p-6 border-b border-gray-100 flex justify-between items-center shrink-0">
-                    <div>
-                        <h3 class="font-black text-slate-800 text-lg">Ingressos Emitidos</h3>
-                        <p class="text-xs text-gray-400 font-bold mt-1">
-                            Total: <span id="totalGeral">0</span> | 
-                            Avulsos: <span id="totalAvulsos" class="text-blue-600">0</span> | 
-                            Validados: <span id="totalValidados" class="text-green-600">0</span>
-                        </p>
+                <div id="listaAdmin" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     </div>
-                    <input type="text" id="busca" onkeyup="filtrarTabela()" placeholder="🔍 Buscar nome..." class="p-2 bg-gray-50 rounded-lg text-sm border focus:ring-2 ring-blue-500 outline-none w-48">
-                </div>
-                
-                <div class="overflow-y-auto overflow-x-auto flex-1 custom-scrollbar">
-                    <table class="w-full text-left text-sm text-gray-600">
-                        <thead class="bg-gray-50 text-xs uppercase text-gray-400 font-bold sticky top-0 z-10">
-                            <tr>
-                                <th class="p-4 bg-gray-50">Aluno</th>
-                                <th class="p-4 bg-gray-50">Evento</th>
-                                <th class="p-4 bg-gray-50">Tipo</th>
-                                <th class="p-4 bg-gray-50 text-center">Status</th>
-                                <th class="p-4 bg-gray-50 text-right">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabelaIngressos" class="divide-y divide-gray-100">
-                            <tr><td class="p-4">Carregando dados...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
             </div>
         </div>
-    </div>
+    </main>
 
     <script>
         const firebaseConfig = { 
@@ -167,317 +95,80 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        emailjs.init("RmJx_2rhtntD90vsH");
-
-        let todosEventos = {}; 
-        let todosIngressos = [];
-        let contagemAvulsosPorEvento = {}; 
-
-        // 1. CARREGAR DADOS
-        function carregarTudo() {
-            // Listener de Eventos
-            db.ref('eventos').on('value', snapEventos => {
-                todosEventos = {};
-                if(snapEventos.exists()) {
-                    snapEventos.forEach(child => {
-                        todosEventos[child.key] = { key: child.key, ...child.val() };
-                    });
-                }
-                
-                // Listener de Ingressos (só atualiza a tela depois de ter os ingressos para contar o estoque)
-                db.ref('ingressos').on('value', snapIngressos => {
-                    todosIngressos = [];
-                    contagemAvulsosPorEvento = {}; 
-                    if(snapIngressos.exists()) {
-                        snapIngressos.forEach(i => {
-                            const ing = { key: i.key, ...i.val() };
-                            todosIngressos.push(ing);
-                            
-                            // Contagem de estoque
-                            if(ing.tipo === 'Avulso') {
-                                if(!contagemAvulsosPorEvento[ing.evento]) contagemAvulsosPorEvento[ing.evento] = 0;
-                                contagemAvulsosPorEvento[ing.evento]++;
-                            }
-                        });
-                    }
-                    atualizarUIEventos(); // Atualiza a lista de eventos
-                    renderizarTabelaIngressos(todosIngressos); // Atualiza a tabela de ingressos
-                    atualizarInfoEstoque(); // Atualiza o select
-                });
-            });
-        }
-        carregarTudo();
-
-        // 2. ATUALIZAR LISTA DE EVENTOS (Lógica corrigida para garantir que TODOS apareçam)
-        function atualizarUIEventos() {
-            const tbodyEventos = document.getElementById('listaEventosTabela');
-            const sel = document.getElementById('selEventos');
-            const selecaoAtual = sel.value; 
-
-            // Limpa o Select
-            sel.innerHTML = '<option value="">Selecione o Evento...</option>';
-
-            const eventosArray = Object.values(todosEventos);
-            
-            // Se não tiver eventos
-            if(eventosArray.length === 0) { 
-                tbodyEventos.innerHTML = "<tr><td colspan='4' class='p-4 text-center text-xs text-gray-400'>Nenhum evento criado.</td></tr>"; 
-                return; 
-            }
-
-            // Construir o HTML em uma variável primeiro (Mais rápido e seguro)
-            let htmlTabela = "";
-
-            eventosArray.forEach(ev => {
-                // Cálculos
-                const vendidos = contagemAvulsosPorEvento[ev.nome] || 0;
-                const limite = parseInt(ev.estoque) || 0;
-                const disponivel = limite - vendidos;
-                const statusTexto = limite > 0 ? `Restam ${Math.max(0, disponivel)}` : "Ilimitado";
-                
-                const isLiberado = ev.liberado === true;
-                const btnClass = isLiberado ? 'bg-green-100 text-green-700 border-green-200' : 'bg-slate-100 text-slate-500 border-slate-200';
-                const iconTrava = isLiberado ? '🔓 Aberto' : '🔒 Fechado';
-
-                // Adiciona ao Select (Ingresso Avulso)
-                const opt = document.createElement('option'); 
-                opt.value = ev.nome; 
-                opt.text = `${ev.nome} (${statusTexto})`; 
-                sel.appendChild(opt);
-                
-                // Barra de Progresso
-                let porcentagem = 0; let corBarra = 'bg-blue-600';
-                if(limite > 0) {
-                    porcentagem = Math.min((vendidos / limite) * 100, 100);
-                    if(porcentagem >= 100) corBarra = 'bg-gray-800'; 
-                    else if(porcentagem > 90) corBarra = 'bg-red-600';
-                }
-
-                // Adiciona à string da Tabela (Gerenciar Eventos)
-                htmlTabela += `
-                <tr class="hover:bg-slate-50 transition group border-b border-gray-50">
-                    <td class="p-3 w-5/12 align-middle">
-                        <div class="font-bold text-slate-800 text-sm truncate" title="${ev.nome}">${ev.nome}</div>
-                        <div class="text-[10px] text-gray-400 font-mono">${ev.data}</div>
-                    </td>
-                    <td class="p-3 w-3/12 align-middle">
-                        <div class="flex justify-between text-[10px] mb-1 font-bold text-gray-500">
-                            <span>${vendidos}</span>
-                            <span>${limite>0 ? limite : '∞'}</span>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-1.5">
-                            <div class="${corBarra} h-1.5 rounded-full" style="width: ${porcentagem}%"></div>
-                        </div>
-                    </td>
-                    <td class="p-3 w-2/12 text-center align-middle">
-                         <button onclick="alternarTrava('${ev.key}', ${isLiberado})" class="text-[10px] font-bold border px-2 py-1 rounded w-full ${btnClass} hover:opacity-80 transition">
-                            ${iconTrava}
-                        </button>
-                    </td>
-                    <td class="p-3 w-2/12 text-right align-middle">
-                        <button onclick="excluirEvento('${ev.key}')" class="text-xs text-gray-300 hover:text-red-500 transition p-2 rounded-full hover:bg-red-50" title="Excluir">
-                            🗑️
-                        </button>
-                    </td>
-                </tr>`;
-            });
-
-            // Injeta o HTML de uma vez só
-            tbodyEventos.innerHTML = htmlTabela;
-
-            // Restaura a seleção do dropdown se possível
-            if(selecaoAtual) sel.value = selecaoAtual;
-        }
-
-        function alternarTrava(key, statusAtual) {
-            db.ref('eventos/'+key).update({ liberado: !statusAtual });
-        }
-
-        function atualizarInfoEstoque() {
-            const nomeEvento = document.getElementById('selEventos').value;
-            const divInfo = document.getElementById('avulsoInfo');
-            if(!nomeEvento) { divInfo.classList.add('hidden'); return; }
-
-            const evData = Object.values(todosEventos).find(e => e.nome === nomeEvento);
-            if(evData) {
-                const limite = parseInt(evData.estoque) || 0;
-                const vendidos = contagemAvulsosPorEvento[nomeEvento] || 0;
-                const restantes = limite - vendidos;
-                divInfo.classList.remove('hidden');
-                let textoStatus = !evData.liberado ? "<span class='block text-gray-500 mb-1'>🔒 O Aluno vê 'EM BREVE'</span>" : "";
-                if(limite > 0) {
-                    if(restantes <= 0) divInfo.innerHTML = `${textoStatus}⛔ ESGOTADO! (${vendidos}/${limite})`;
-                    else divInfo.innerHTML = `${textoStatus}✅ DISPONÍVEIS: ${restantes} (Total: ${limite})`;
-                } else {
-                    divInfo.innerHTML = `${textoStatus}♾️ Estoque Ilimitado`;
-                }
-            }
-        }
-
-        async function gerarAvulso() {
-            const evNome = document.getElementById('selEventos').value;
-            const al = document.getElementById('avAluno').value;
-            const mt = document.getElementById('avMat').value;
-            const rp = document.getElementById('avResp').value || "Escola";
-            const qtd = parseInt(document.getElementById('avQtdGerar').value) || 1;
-
-            if(!evNome || !al || !mt) return alert("Preencha todos os campos!");
-            if(qtd < 1) return alert("Mínimo 1 ingresso.");
-            const eventoObj = Object.values(todosEventos).find(e => e.nome === evNome);
-            if(!eventoObj) return alert("Evento não encontrado.");
-            const limite = parseInt(eventoObj.estoque) || 0;
-            const vendidos = contagemAvulsosPorEvento[evNome] || 0;
-            const disponivel = limite - vendidos;
-            if(limite > 0) {
-                if((vendidos + qtd) > limite) {
-                    alert(`⛔ ESTOQUE INSUFICIENTE!\nVocê pediu ${qtd}, mas só restam ${Math.max(0, disponivel)} no estoque AVULSO.`);
-                    return; 
-                }
-            }
-            if(qtd > 5) alert("Gerando ingressos, aguarde...");
-            const time = Date.now();
-            for(let i = 0; i < qtd; i++) {
-                const id = `${mt}-AVULSO-${time.toString().slice(-5)}${i}`; 
-                await db.ref('ingressos/'+id).set({ 
-                    aluno: al, 
-                    matricula: mt, 
-                    responsavel: rp, 
-                    evento: evNome, 
-                    utilizado: false, 
-                    tipo: 'Avulso',
-                    data: new Date().toISOString() 
-                });
-            }
-            alert(`${qtd} ingresso(s) gerado(s)!`);
-            document.getElementById('avQtdGerar').value = "1"; 
-        }
 
         function salvarEvento() {
-            const nome = document.getElementById('evNome').value; 
-            const data = document.getElementById('evData').value;
-            const estoque = document.getElementById('evEstoque').value; 
-            const img = document.getElementById('evImg').value;
-            const bgPdf = document.getElementById('evBg').value; 
-            const zap = document.getElementById('evZap').value;
-            const qtdPorAluno = document.getElementById('evQtd').value;
+            const nome = document.getElementById('nome').value;
+            const data = document.getElementById('data').value;
+            const imagem = document.getElementById('imagem').value;
+            const limit = document.getElementById('limit').value || 1;
+            const contato = document.getElementById('contato').value;
 
-            if(!nome || !data) return alert("Preencha Nome e Data!");
-            
-            db.ref('eventos').push({ 
-                nome, 
-                data, 
-                imagem: img, 
-                bgPdf, 
-                estoque: parseInt(estoque) || 0, 
-                limit_ingressos: parseInt(qtdPorAluno) || 1, 
-                contato: zap, 
-                liberado: false 
+            if(!nome || !data) return alert("Nome e Data são obrigatórios!");
+
+            db.ref('eventos').push({
+                nome, data, imagem, 
+                limit_ingressos: limit, 
+                contato: contato || "",
+                liberado: true, // Começa aberto por padrão
+                criadoEm: new Date().toISOString()
+            }).then(() => {
+                alert("Evento criado com sucesso!");
+                location.reload();
             });
-            alert("Evento Criado (Bloqueado)!"); location.reload();
         }
 
-        function renderizarTabelaIngressos(lista) {
-            const tbody = document.getElementById('tabelaIngressos'); tbody.innerHTML = "";
-            let qtd = 0; 
-            let avulsos = 0; 
-            let validados = 0;
+        function toggleStatus(key, statusAtual) {
+            db.ref('eventos/' + key).update({ liberado: !statusAtual });
+        }
 
-            if(lista.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-gray-400">Nenhum ingresso.</td></tr>`; return; }
+        function excluirEvento(key) {
+            if(confirm("Tem certeza que deseja excluir este evento permanentemente?")) {
+                db.ref('eventos/' + key).remove();
+            }
+        }
 
-            lista.slice().reverse().forEach(ing => {
-                qtd++; 
-                if(ing.tipo === 'Avulso') avulsos++;
-                if(ing.status === 'validado') validados++;
+        // Monitorar Eventos
+        db.ref('eventos').on('value', snap => {
+            const cont = document.getElementById('listaAdmin');
+            const countLabel = document.getElementById('count');
+            cont.innerHTML = "";
+            let i = 0;
 
-                const tipoBadge = ing.tipo === 'Avulso' 
-                    ? '<span class="text-[10px] bg-purple-100 text-purple-700 px-2 py-1 rounded font-bold">AVULSO</span>' 
-                    : '<span class="text-[10px] bg-gray-100 text-gray-500 px-2 py-1 rounded font-bold">ALUNO</span>';
+            snap.forEach(item => {
+                const ev = item.val();
+                const key = item.key;
+                i++;
 
-                let statusHtml = "";
-                let rowColor = "border-b border-gray-50 hover:bg-slate-50"; 
+                cont.innerHTML += `
+                    <div class="bg-slate-50 p-5 rounded-[1.5rem] border border-slate-100 flex flex-col justify-between group">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="w-12 h-12 bg-cover bg-center rounded-xl shadow-sm" style="background-image: url('${ev.imagem || 'https://placehold.co/100'}')"></div>
+                            <div class="flex gap-2">
+                                <button onclick="excluirEvento('${key}')" class="text-slate-300 hover:text-red-500 transition">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-bold text-slate-800 leading-tight mb-1 uppercase text-sm">${ev.nome}</h4>
+                            <p class="text-[10px] text-slate-400 font-bold mb-4 italic">${ev.data}</p>
+                        </div>
 
-                if (ing.status === 'validado') {
-                    rowColor = "border-b border-green-50 bg-green-50/40 hover:bg-green-100/50"; 
-                    const hora = ing.horario_validacao ? new Date(ing.horario_validacao).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '??:??';
-                    statusHtml = `
-                        <div class="flex flex-col items-center">
-                            <span class="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded border border-green-200 font-bold uppercase tracking-wide">✅ Validado</span>
-                            <span class="text-[10px] text-green-600 font-mono mt-1">${hora}</span>
-                        </div>`;
-                } else {
-                    statusHtml = `<div class="flex justify-center"><span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded border border-blue-100 font-bold uppercase tracking-wide">🎟️ Liberado</span></div>`;
-                }
-
-                tbody.innerHTML += `
-                    <tr class="${rowColor} transition">
-                        <td class="p-4"><div class="font-bold text-slate-800">${ing.aluno}</div><div class="text-xs text-slate-400 font-mono">#${ing.key}</div></td>
-                        <td class="p-4"><span class="text-xs font-bold uppercase bg-gray-100 text-gray-600 px-2 py-1 rounded-md">${ing.evento}</span></td>
-                        <td class="p-4">${tipoBadge}</td>
-                        <td class="p-4 text-center">${statusHtml}</td>
-                        <td class="p-4 text-right">
-                            <button onclick="reenviarEmail('${ing.key}')" class="mr-2 text-slate-400 hover:text-purple-600 transition" title="Reenviar Email">📧</button>
-                            <button onclick="reimprimir('${ing.key}')" class="mr-2 text-slate-400 hover:text-blue-600 transition" title="Baixar Novamente">⬇️</button>
-                            <button onclick="excluirIngresso('${ing.key}')" class="text-slate-400 hover:text-red-500 transition" title="Excluir">🗑️</button>
-                        </td>
-                    </tr>`;
+                        <div class="flex items-center justify-between bg-white p-3 rounded-2xl shadow-sm">
+                            <span class="text-[10px] font-black tracking-widest ${ev.liberado ? 'text-blue-600' : 'text-slate-400'}">
+                                ${ev.liberado ? '● ABERTO' : '○ FECHADO'}
+                            </span>
+                            <label class="switch">
+                                <input type="checkbox" ${ev.liberado ? 'checked' : ''} onchange="toggleStatus('${key}', ${ev.liberado})">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                `;
             });
-            document.getElementById('totalGeral').innerText = qtd; 
-            document.getElementById('totalAvulsos').innerText = avulsos;
-            document.getElementById('totalValidados').innerText = validados; 
-        }
-
-        async function reenviarEmail(key) {
-            const ing = todosIngressos.find(i => i.key === key);
-            if(!ing) return alert("Ingresso não encontrado.");
-            if(!ing.email) return alert("Este ingresso não tem e-mail cadastrado (Avulso?).");
-
-            if(!confirm(`Reenviar ingresso para: ${ing.email}?`)) return;
-
-            const templateParams = {
-                nome_aluno: ing.aluno,
-                turma: ing.turma || "N/A",
-                nome_responsavel: ing.responsavel,
-                evento: ing.evento,
-                codigo_ingresso: ing.key, 
-                to_email: ing.email
-            };
-
-            emailjs.send("service_r1vrjkp", "template_4yvqw5g", templateParams)
-                .then(() => alert("✅ Email reenviado com sucesso!"))
-                .catch((err) => alert("❌ Erro ao enviar: " + JSON.stringify(err)));
-        }
-
-        function excluirEvento(key) { if(confirm("Deseja excluir este evento?")) db.ref('eventos/'+key).remove(); }
-        function excluirIngresso(key) { if(confirm("Apagar ingresso? Isso invalidará o QR Code.")) db.ref('ingressos/'+key).remove(); }
-        function importarAlunos() { try { const lista = JSON.parse(document.getElementById('jsonAlunos').value); let ups = {}; lista.forEach(a => { if(a.matricula) ups['/alunos_db/'+a.matricula] = { nome: a.nome, turma: a.turma||"" }; }); db.ref().update(ups).then(()=>alert("Importado!")); } catch(e){ alert("JSON Inválido"); } }
-        async function buscarAlunoAvulso(mat) { if(!mat) return; const s = await db.ref('alunos_db/'+mat).once('value'); if(s.exists()) document.getElementById('avAluno').value = s.val().nome; }
-        function filtrarTabela() { const v = document.getElementById('busca').value.toLowerCase(); document.querySelectorAll('#tabelaIngressos tr').forEach(r => r.style.display = r.innerText.toLowerCase().includes(v) ? '' : 'none'); }
-        
-        async function reimprimir(key) { 
-            const t = todosIngressos.find(i => i.key === key);
-            const evInfo = Object.values(todosEventos).find(e => e.nome === t.evento);
-            const escala = 4; const larguraOriginal = 200; const alturaOriginal = 300; const w = larguraOriginal * escala; const h = alturaOriginal * escala;
-            let bg = null; if(evInfo && evInfo.bgPdf) { bg = new Image(); bg.crossOrigin="anonymous"; bg.src = evInfo.bgPdf; await new Promise(r => { bg.onload=r; bg.onerror=r; }); }
-            const c = document.createElement('canvas'); const x = c.getContext('2d'); c.width = w; c.height = h; 
-            x.fillStyle='#fff'; x.fillRect(0,0,w,h);
-            if(bg) { const ratio = Math.max(w/bg.width, h/bg.height); const centerShift_x = (w - bg.width*ratio) / 2; const centerShift_y = (h - bg.height*ratio) / 2; x.drawImage(bg, 0, 0, bg.width, bg.height, centerShift_x, centerShift_y, bg.width*ratio, bg.height*ratio); }
-            x.fillStyle='rgba(255,255,255,0.95)'; x.beginPath(); x.roundRect(10*escala, 130*escala, 180*escala, 160*escala, 10*escala); x.fill();
-            x.strokeStyle = '#e2e8f0'; x.lineWidth = 2 * escala; x.stroke();
-            x.fillStyle='#000'; x.textAlign='center'; x.font = `bold ${12 * escala}px sans-serif`; x.fillText(t.evento.substring(0,25), w/2, 155 * escala);
-            let fs = 18 * escala; x.font = `900 ${fs}px sans-serif`; x.fillStyle = '#1e293b'; const nomeUp = t.aluno.toUpperCase();
-            while (x.measureText(nomeUp).width > (170 * escala) && fs > (8 * escala)) { fs -= escala; x.font = `900 ${fs}px sans-serif`; }
-            x.fillText(nomeUp, w/2, 185 * escala);
-            x.font = `${10 * escala}px monospace`; x.fillStyle='#64748b'; x.fillText(key, w/2, 205 * escala);
-            const q = document.createElement('div'); const qrSize = 80 * escala;
-            new QRCode(q, { text: key, width: qrSize, height: qrSize, colorDark: "#000000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.H }); 
-            await new Promise(r=>setTimeout(r, 200));
-            const canvasQr = q.querySelector('canvas');
-            if(canvasQr) { x.drawImage(canvasQr, (w - qrSize)/2, 215 * escala); }
-            const link = document.createElement('a'); link.href = c.toDataURL('image/jpeg', 1.0); link.download = `Ingresso-${t.aluno.replace(/\s+/g, '_')}.jpg`; link.click();
-        }
+            countLabel.innerText = `${i} cadastrados`;
+        });
     </script>
 </body>
 </html>
-
-
-
