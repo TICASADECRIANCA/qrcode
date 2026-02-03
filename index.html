@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal de Eventos - CASAQR</title>
+    <title>CASAQR - Portal de Ingressos</title>
     
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z'></path></svg>">
 
@@ -18,7 +18,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; }
         .event-card { transition: all 0.3s ease; }
-        .event-card:hover { transform: translateY(-8px); shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1); }
+        .event-card:hover { transform: translateY(-8px); }
     </style>
 </head>
 <body class="pb-12">
@@ -29,37 +29,37 @@
         <h3 id="statusMsg" class="text-2xl font-black text-slate-800 text-center">Processando...</h3>
     </div>
 
-    <nav class="bg-white p-4 shadow-sm flex flex-wrap justify-between items-center px-4 md:px-8 border-b sticky top-0 z-40">
-        <div onclick="acessoSecreto()" class="flex items-center gap-3 cursor-pointer group select-none">
-            <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 group-hover:rotate-6 transition-transform">
-                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"></path>
-                </svg>
+    <nav class="bg-white/80 backdrop-blur-md sticky top-0 z-40 p-5 shadow-sm border-b border-slate-100 mb-8">
+        <div class="max-w-7xl mx-auto flex justify-between items-center px-4">
+            <div onclick="acessoSecreto()" class="flex items-center gap-3 cursor-pointer group select-none">
+                <div class="w-11 h-11 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200 group-hover:rotate-6 transition-transform">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"></path>
+                    </svg>
+                </div>
+                <span class="text-2xl font-black text-slate-800 tracking-tighter">CASA<span class="text-blue-600">QR</span></span>
             </div>
-            <span class="text-2xl font-black text-slate-800 tracking-tighter">CASA<span class="text-blue-600">QR</span></span>
-        </div>
-        <div class="hidden md:block">
-            <span class="bg-blue-50 text-blue-700 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest border border-blue-100">Portal do Aluno</span>
+            <span class="hidden md:block bg-blue-50 text-blue-700 text-[10px] font-bold px-4 py-1.5 rounded-full uppercase tracking-widest border border-blue-100">Portal do Aluno</span>
         </div>
     </nav>
 
     <div id="listaEventos" class="p-8 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto">
-        <p class="text-gray-500 col-span-3 text-center">Carregando eventos...</p>
+        <p class="text-gray-500 col-span-3 text-center">Buscando eventos disponíveis...</p>
     </div>
 
     <div id="modalIngresso" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-[2.5rem] p-8 max-w-lg w-full shadow-2xl overflow-y-auto max-h-[90vh]">
             <h3 id="nomeEvTitle" class="text-2xl font-black mb-1 uppercase text-blue-600">Garantir Ingresso</h3>
-            <p class="text-sm text-gray-400 mb-6 font-bold">Digite a matrícula para buscar o aluno.</p>
+            <p class="text-sm text-gray-400 mb-6 font-bold">Consulte a matrícula para identificar o aluno.</p>
             
             <div class="space-y-4">
                 <div>
                     <label class="text-xs font-bold ml-4 text-gray-500 uppercase">Responsável</label>
-                    <input type="text" id="pai" placeholder="Nome completo do Responsável" class="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 ring-blue-500 border border-transparent">
+                    <input type="text" id="pai" placeholder="Nome do Pai ou Mãe" class="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 ring-blue-500 border border-transparent">
                 </div>
                 <div>
                     <label class="text-xs font-bold ml-4 text-gray-500 uppercase">E-mail</label>
-                    <input type="email" id="email" placeholder="Para receber o PDF" class="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 ring-blue-500 border border-transparent">
+                    <input type="email" id="email" placeholder="Para receber o comprovante" class="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 ring-blue-500 border border-transparent">
                 </div>
                 
                 <div id="filhos" class="space-y-3 pt-2 border-t border-gray-100"></div>
@@ -67,8 +67,8 @@
                 <button onclick="addFilho()" class="text-blue-600 font-bold text-xs w-full py-2 uppercase hover:bg-blue-50 rounded-xl transition">+ Incluir outro aluno</button>
                 
                 <div class="pt-4 space-y-2">
-                    <button onclick="processar()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition">BAIXAR PDF AGORA</button>
-                    <button onclick="document.getElementById('modalIngresso').classList.add('hidden')" class="w-full py-3 text-gray-400 text-xs font-bold uppercase">Cancelar</button>
+                    <button onclick="processar()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition">GERAR MEU INGRESSO</button>
+                    <button onclick="document.getElementById('modalIngresso').classList.add('hidden')" class="w-full py-3 text-gray-400 text-xs font-bold uppercase">Voltar</button>
                 </div>
             </div>
         </div>
@@ -95,34 +95,29 @@
 
         function acessoSecreto() {
             clicks++;
-            if (clicks === 5) { if(confirm("Ir para Admin?")) window.location.href = "cadastrar_evento.html"; clicks = 0; }
+            if (clicks === 5) { if(confirm("Abrir Painel Admin?")) window.location.href = "cadastrar_evento.html"; clicks = 0; }
             setTimeout(() => { clicks = 0; }, 2000);
         }
 
-        // CARREGA EVENTOS COM TRAVA DE STATUS
         db.ref('eventos').on('value', snap => {
             const cont = document.getElementById('listaEventos'); cont.innerHTML = "";
-            if(!snap.exists()){ cont.innerHTML = `<p class="col-span-3 text-center text-gray-400 mt-10">Nenhum evento disponível.</p>`; return; }
+            if(!snap.exists()){ cont.innerHTML = `<p class="col-span-3 text-center text-gray-400 mt-10">Nenhum evento ativo no momento.</p>`; return; }
 
             snap.forEach(i => {
                 const ev = i.val();
                 const isLiberado = ev.liberado === true;
-                let btnHtml = "";
-                let statusBadge = "";
+                let btnHtml = isLiberado 
+                    ? `<button onclick="openM('${i.key}')" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-black transition shadow-lg shadow-slate-200">🎟️ GARANTIR INGRESSO</button>`
+                    : `<button class="w-full bg-gray-200 text-gray-400 py-4 rounded-2xl font-bold cursor-not-allowed" disabled>🔒 INDISPONÍVEL</button>`;
 
-                if (!isLiberado) {
-                    statusBadge = `<span class="absolute top-4 right-4 bg-gray-900/80 backdrop-blur text-white text-[10px] font-bold px-3 py-1 rounded-full z-10">EM BREVE</span>`;
-                    btnHtml = `<button class="w-full bg-gray-200 text-gray-400 py-4 rounded-2xl font-bold cursor-not-allowed" disabled>🔒 INDISPONÍVEL</button>`;
-                } else if(ev.contato) {
-                    const msg = `Olá, quero comprar ingressos para *${ev.nome}*.`;
-                    btnHtml = `<a href="https://wa.me/${ev.contato}?text=${encodeURIComponent(msg)}" target="_blank" class="block text-center w-full bg-green-600 text-white py-4 rounded-2xl font-bold hover:bg-green-700 transition shadow-lg shadow-green-100">💲 COMPRAR INGRESSO</a>`;
-                } else {
-                    btnHtml = `<button onclick="openM('${i.key}')" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-black transition shadow-lg shadow-slate-200">🎟️ GARANTIR INGRESSO</button>`;
+                if(ev.contato && isLiberado) {
+                    const msg = `Olá, gostaria de adquirir ingressos para o evento: ${ev.nome}.`;
+                    btnHtml = `<a href="https://wa.me/${ev.contato}?text=${encodeURIComponent(msg)}" target="_blank" class="block text-center w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-100">💲 COMPRAR INGRESSO</a>`;
                 }
 
                 cont.innerHTML += `
-                <div class="event-card bg-white rounded-[2.5rem] p-4 shadow-sm border border-gray-100 relative ${!isLiberado ? 'opacity-75 grayscale-[0.5]' : ''}">
-                    ${statusBadge}
+                <div class="event-card bg-white rounded-[2.5rem] p-4 shadow-sm border border-gray-100 relative ${!isLiberado ? 'opacity-70' : ''}">
+                    ${!isLiberado ? '<span class="absolute top-6 right-6 bg-slate-800 text-white text-[10px] font-bold px-3 py-1 rounded-full z-10">EM BREVE</span>' : ''}
                     <div class="h-52 rounded-[2rem] bg-cover bg-center mb-6" style="background-image: url('${ev.imagem || 'https://placehold.co/600x400'}')"></div>
                     <div class="px-2 pb-2">
                         <p class="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">${ev.data}</p>
@@ -136,8 +131,6 @@
         async function openM(key) {
             const snap = await db.ref('eventos/'+key).once('value');
             currentEv = snap.val();
-            if(!currentEv.liberado) return alert("Este evento está fechado para inscrições.");
-            
             document.getElementById('nomeEvTitle').innerText = currentEv.nome;
             document.getElementById('filhos').innerHTML = "";
             addFilho();
@@ -148,13 +141,13 @@
             const mat = inputMat.value;
             const campoNome = inputMat.previousElementSibling; 
             if(mat.length < 2) return;
-            campoNome.placeholder = "Buscando...";
+            campoNome.placeholder = "Localizando...";
             
             const snap = await db.ref('alunos_db/' + mat).once('value');
             if(snap.exists()) {
                 const dados = snap.val();
                 campoNome.value = dados.nome + (dados.turma ? ` (${dados.turma})` : "");
-                campoNome.classList.add("text-green-700");
+                campoNome.classList.add("text-blue-700");
                 
                 const tickets = await db.ref('ingressos').orderByChild('matricula').equalTo(mat).once('value');
                 let jaTem = false;
@@ -162,11 +155,11 @@
                     tickets.forEach(t => { if(t.val().evento === currentEv.nome) jaTem = true; });
                 }
                 if(jaTem) {
-                    alert("⚠️ Este aluno já possui ingresso para este evento!");
+                    alert("⚠️ Este aluno já possui um ingresso registrado para este evento!");
                     inputMat.value = ""; campoNome.value = "";
                 }
             } else {
-                alert("Matrícula não encontrada!");
+                alert("Matrícula não encontrada no sistema!");
                 inputMat.value = ""; campoNome.value = "";
             }
         }
@@ -187,10 +180,8 @@
             const nomes = document.querySelectorAll('.n-aluno');
             const mats = document.querySelectorAll('.m-aluno');
 
-            if(!pai || !mail) return alert("Preencha Responsável e E-mail!");
-            for(let k=0; k<nomes.length; k++) {
-                if(!nomes[k].value || !mats[k].value) return alert("Verifique as matrículas!");
-            }
+            if(!pai || !mail) return alert("Por favor, preencha o Responsável e o E-mail!");
+            for(let k=0; k<nomes.length; k++) { if(!nomes[k].value || !mats[k].value) return alert("Confirme a matrícula de todos os alunos!"); }
 
             document.getElementById('modalIngresso').classList.add('hidden');
             document.getElementById('overlay').classList.remove('hidden');
@@ -198,56 +189,60 @@
             try {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
-                let fundoImg = await carregarImagemSegura(currentEv.bgPdf);
-                let alunosList = [];
+                let totalGeral = 0;
 
                 for(let i=0; i<nomes.length; i++) {
                     const n = nomes[i].value; const m = mats[i].value;
-                    alunosList.push(n);
                     const qtd = parseInt(currentEv.limit_ingressos) || 1;
 
                     for(let j=1; j <= qtd; j++) {
-                        if(i > 0 || j > 1) doc.addPage();
-                        if(fundoImg) doc.addImage(fundoImg, 'JPEG', 0, 0, 210, 297);
+                        totalGeral++; if(totalGeral > 1) doc.addPage();
                         
+                        // DESIGN DO PDF (IGUAL À IMAGEM)
+                        doc.setFillColor(255, 255, 255); doc.rect(0, 0, 210, 297, 'F');
+                        doc.setFillColor(26, 62, 178); doc.roundedRect(10, 10, 190, 45, 5, 5, 'F');
+                        doc.setTextColor(255, 255, 255); doc.setFontSize(22); doc.setFont(undefined, 'bold');
+                        doc.text(currentEv.nome.toUpperCase(), 105, 30, {align: 'center'});
+                        doc.setFontSize(10); doc.text("CASAQR EVENTOS", 105, 40, {align: 'center', charSpace: 2});
+
+                        doc.setTextColor(100, 116, 139); doc.setFontSize(8); doc.text("ALUNO(A)", 20, 75);
+                        doc.setTextColor(30, 41, 59); doc.setFontSize(18); doc.text(n.toUpperCase(), 20, 85);
+                        
+                        doc.setTextColor(100, 116, 139); doc.setFontSize(8); doc.text("RESPONSÁVEL", 20, 115);
+                        doc.setTextColor(30, 41, 59); doc.setFontSize(14); doc.text(pai.toUpperCase(), 20, 125);
+
+                        doc.setDrawColor(203, 213, 225); doc.setLineDashPattern([1, 1], 0); doc.line(20, 140, 190, 140);
+
                         const idUnico = `${m}-${Date.now().toString().slice(-4)}-${j}`;
-                        doc.setFillColor(255, 255, 255); doc.roundedRect(60, 80, 90, 100, 5, 5, 'F');
-                        doc.setTextColor(0,0,0); doc.setFontSize(14);
-                        doc.text(n.toUpperCase(), 105, 100, {align: 'center', maxWidth: 80});
-                        doc.setFontSize(10); doc.text(`INGRESSO ${j}/${qtd} | MAT: ${m}`, 105, 110, {align: 'center'});
+                        doc.setLineDashPattern([], 0); doc.setFillColor(241, 245, 249); doc.roundedRect(20, 160, 80, 15, 3, 3, 'F');
+                        doc.setTextColor(30, 41, 59); doc.setFontSize(10); doc.text(idUnico, 60, 170, {align: 'center'});
+                        doc.setTextColor(100, 116, 139); doc.setFontSize(8); doc.text("CÓDIGO DE VALIDAÇÃO", 20, 155);
 
                         const qrDiv = document.getElementById('qrcode-temp'); qrDiv.innerHTML = "";
                         new QRCode(qrDiv, { text: idUnico, width: 256, height: 256 });
                         await new Promise(r => setTimeout(r, 150));
                         const qrCanvas = qrDiv.querySelector('canvas');
-                        if(qrCanvas) doc.addImage(qrCanvas.toDataURL("image/png"), 'PNG', 75, 120, 60, 60);
+                        if(qrCanvas) {
+                            doc.setDrawColor(226, 232, 240); doc.roundedRect(140, 145, 45, 45, 3, 3, 'S');
+                            doc.addImage(qrCanvas.toDataURL("image/png"), 'PNG', 142.5, 147.5, 40, 40);
+                        }
 
-                        await db.ref('ingressos/' + idUnico).set({ aluno: n, matricula: m, responsavel: pai, evento: currentEv.nome, status: 'liberado', data: new Date().toISOString() });
+                        doc.setTextColor(148, 163, 184); doc.setFontSize(8); doc.text("Apresente este código na entrada do evento", 20, 280);
+                        doc.setFillColor(34, 197, 94); doc.roundedRect(175, 272, 15, 10, 2, 2, 'F');
+                        doc.setTextColor(255, 255, 255); doc.text(`${j}/${qtd}`, 182.5, 279, {align: 'center'});
+
+                        await db.ref('ingressos/' + idUnico).set({ aluno: n, matricula: m, responsavel: pai, evento: currentEv.nome, utilizado: false, data: new Date().toISOString() });
                     }
                 }
 
                 doc.save(`Ingresso_${pai.split(' ')[0]}.pdf`);
-                emailjs.send("service_r1vrjkp", "template_4yvqw5g", { nome_responsavel: pai, to_email: mail, evento: currentEv.nome, message: `Confirmado: ${alunosList.join(", ")}` });
+                emailjs.send("service_r1vrjkp", "template_4yvqw5g", { nome_responsavel: pai, to_email: mail, evento: currentEv.nome, message: `Seus ingressos foram gerados com sucesso!` });
 
                 document.getElementById('loader').classList.add('hidden'); document.getElementById('successIcon').classList.remove('hidden');
-                document.getElementById('statusMsg').innerText = "Sucesso!";
+                document.getElementById('statusMsg').innerText = "Concluído!";
                 setTimeout(() => location.reload(), 3000);
 
-            } catch(e) {
-                alert("Erro: " + e.message); location.reload();
-            }
-        }
-
-        function carregarImagemSegura(url) { 
-            return new Promise((r) => { 
-                if(!url) return r(null); 
-                const i = new Image(); i.crossOrigin="anonymous"; 
-                i.onload=()=> {
-                    const c=document.createElement("canvas");c.width=i.width;c.height=i.height;
-                    c.getContext("2d").drawImage(i,0,0);r(c.toDataURL("image/jpeg",0.8))
-                }; 
-                i.onerror=()=>r(null); i.src=url; 
-            }); 
+            } catch(e) { alert("Erro ao gerar PDF: " + e.message); location.reload(); }
         }
     </script>
 </body>
