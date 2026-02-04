@@ -3,152 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portaria Pro - CASAQR</title>
+    <title>CASAQR - Validador de Acesso</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f172a; color: white; }
+        #reader { border: none !important; border-radius: 2rem; overflow: hidden; }
+        video { object-fit: cover !important; }
+    </style>
 </head>
-<body class="bg-slate-900 text-white min-h-screen font-sans">
+<body class="min-h-screen flex flex-col items-center p-6">
 
-    <div id="loginSection" class="max-w-md mx-auto p-8 pt-20">
-        <div class="bg-white rounded-[2.5rem] p-8 text-slate-900 shadow-2xl">
-            <h2 class="text-2xl font-black mb-2 text-center text-blue-600">Portaria Digital</h2>
-            <p class="text-gray-400 text-center text-sm mb-6">Acesse para validar ingressos</p>
-            <input type="password" id="passInput" placeholder="Senha da Portaria" class="w-full p-4 bg-slate-100 rounded-2xl mb-4 outline-none border-2 border-transparent focus:border-blue-500 text-center text-xl">
-            <button onclick="verificarSenha()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold uppercase shadow-lg hover:bg-blue-700 transition">ENTRAR</button>
-        </div>
+    <div class="w-full max-w-md text-center mb-8 mt-4">
+        <h1 class="text-2xl font-black italic tracking-tighter uppercase">CASA<span class="text-blue-500">QR</span> <span class="text-slate-500">CHECK-IN</span></h1>
+        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Escaneie o QR Code do Ingresso</p>
     </div>
 
-    <div id="mainSection" class="hidden flex flex-col items-center p-4">
-        <header class="w-full max-w-md flex justify-between items-center mb-6 py-4">
-            <div>
-                <h1 class="text-xl font-black italic">CASAQR EVENTOS</h1>
-                <p class="text-[10px] text-blue-400 font-bold uppercase tracking-widest">Modo Validação</p>
-            </div>
-            <button onclick="location.reload()" class="bg-slate-800 p-3 rounded-2xl text-xs border border-slate-700">Sair</button>
-        </header>
+    <div class="w-full max-w-md aspect-square bg-slate-800 rounded-[3rem] border-4 border-slate-700 shadow-2xl relative overflow-hidden">
+        <div id="reader"></div>
+    </div>
 
-        <div class="w-full max-w-md mb-4">
-            <div class="relative overflow-hidden rounded-[2.5rem] border-4 border-slate-800 bg-black shadow-2xl">
-                <div id="reader" class="w-full h-80 bg-black"></div>
-                <div class="absolute inset-0 border-[50px] border-black/50 pointer-events-none flex items-center justify-center">
-                    <div class="w-56 h-56 border-2 border-blue-500/50 rounded-3xl animate-pulse"></div>
-                </div>
-            </div>
+    <div id="result" class="hidden fixed inset-0 z-50 flex flex-col items-center justify-center p-8 text-center animate__animated animate__fadeIn">
+        <div id="resultBox" class="bg-white rounded-[3rem] p-10 w-full max-w-sm shadow-2xl transform scale-110">
+            <div id="resultIcon" class="text-7xl mb-6"></div>
+            <h2 id="resultTitle" class="text-2xl font-black text-slate-800 uppercase italic mb-2"></h2>
+            <p id="resultAlu" class="text-slate-500 font-bold mb-8 uppercase"></p>
+            <button onclick="closeResult()" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase italic">Próximo Scan</button>
         </div>
-
-        <div id="resultCard" class="hidden w-full max-w-md p-6 rounded-[2rem] transition-all duration-300 shadow-xl border-2 border-white/10">
-            <div class="flex items-center gap-4">
-                <div id="statusIcon" class="text-5xl"></div>
-                <div>
-                    <h3 id="resAluno" class="text-xl font-black uppercase leading-tight"></h3>
-                    <p id="resInfo" class="text-sm font-mono opacity-80 mt-1"></p>
-                </div>
-            </div>
-            <button onclick="resetScanner()" class="w-full mt-4 bg-black/20 hover:bg-black/40 py-3 rounded-xl font-bold text-xs uppercase transition">Ler Próximo</button>
-        </div>
-
-        <p class="mt-8 text-slate-500 text-xs uppercase tracking-widest">Aponte para o QR Code</p>
     </div>
 
     <script>
-        const firebaseConfig = { apiKey: "AIzaSyBFDlEOhuUerWjSfK_mPVxoj5sGbSDhe9k", authDomain: "ingressoscdc-9ce88.firebaseapp.com", databaseURL: "https://ingressoscdc-9ce88-default-rtdb.firebaseio.com", projectId: "ingressoscdc-9ce88", storageBucket: "ingressoscdc-9ce88.firebasestorage.app", messagingSenderId: "976193676383", appId: "1:976193676383:web:8f141a1bd705f8bc0ae7ea" };
+        const firebaseConfig = { 
+            apiKey: "AIzaSyBFDlEOhuUerWjSfK_mPVxoj5sGbSDhe9k", 
+            authDomain: "ingressoscdc-9ce88.firebaseapp.com", 
+            databaseURL: "https://ingressoscdc-9ce88-default-rtdb.firebaseio.com", 
+            projectId: "ingressoscdc-9ce88", 
+            storageBucket: "ingressoscdc-9ce88.firebasestorage.app", 
+            messagingSenderId: "976193676383", 
+            appId: "1:976193676383:web:8f141a1bd705f8bc0ae7ea" 
+        };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let html5QrCode;
+        const html5QrCode = new Html5Qrcode("reader");
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
-        function verificarSenha() {
-            // SENHA DEFINIDA AQUI
-            if(document.getElementById('passInput').value === "1992") {
-                document.getElementById('loginSection').classList.add('hidden');
-                document.getElementById('mainSection').classList.remove('hidden');
-                iniciarCamera();
+        html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess);
+
+        async function onScanSuccess(decodedText) {
+            html5QrCode.pause(); // Pausa para processar
+            
+            const snap = await db.ref('ingressos/' + decodedText).once('value');
+            const box = document.getElementById('result');
+            const boxIcon = document.getElementById('resultIcon');
+            const boxTitle = document.getElementById('resultTitle');
+            const boxAlu = document.getElementById('resultAlu');
+            const boxColor = document.getElementById('resultBox');
+
+            box.classList.remove('hidden');
+
+            if(snap.exists()) {
+                const ing = snap.val();
+                if(ing.utilizado) {
+                    boxIcon.innerText = "⚠️";
+                    boxTitle.innerText = "JÁ UTILIZADO";
+                    boxTitle.className = "text-2xl font-black text-amber-500 italic";
+                    boxAlu.innerText = ing.aluno + " (Uso em: " + new Date(ing.data_uso).toLocaleTimeString() + ")";
+                } else {
+                    await db.ref('ingressos/' + decodedText).update({
+                        utilizado: true,
+                        data_uso: new Date().toISOString()
+                    });
+                    boxIcon.innerText = "✅";
+                    boxTitle.innerText = "ACESSO LIBERADO";
+                    boxTitle.className = "text-2xl font-black text-emerald-500 italic";
+                    boxAlu.innerText = ing.aluno;
+                }
             } else {
-                alert("Senha Incorreta!");
+                boxIcon.innerText = "❌";
+                boxTitle.innerText = "INGRESSO INVÁLIDO";
+                boxTitle.className = "text-2xl font-black text-red-500 italic";
+                boxAlu.innerText = "Código não encontrado no banco.";
             }
         }
 
-        function iniciarCamera() {
-            html5QrCode = new Html5Qrcode("reader");
-            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-            
-            // Tenta usar a câmera traseira
-            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
-            .catch(err => {
-                alert("Erro ao abrir câmera: " + err);
-            });
-        }
-
-        function onScanSuccess(decodedText) {
-            // Pausa para não ler o mesmo código 10 vezes seguidas
-            html5QrCode.pause();
-            
-            // O texto chega como "MATRICULA-ID"
-            validarNoBanco(decodedText);
-        }
-
-        // --- LÓGICA CORRIGIDA AQUI ---
-        function validarNoBanco(idUnico) {
-            db.ref('ingressos/' + idUnico).once('value', (snap) => {
-                if (snap.exists()) {
-                    const dados = snap.val();
-                    
-                    // Verifica se já tem o status 'validado' (que o Admin espera)
-                    if (dados.status === 'validado') {
-                        // JÁ USADO
-                        // Pega a hora formatada para exibir no erro
-                        const horaAntiga = dados.horario_validacao ? new Date(dados.horario_validacao).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '??:??';
-                        
-                        mostrarResultado("ERRO", dados.aluno, "JÁ VALIDADO ÀS " + horaAntiga, "bg-red-600");
-                        playAudio('error');
-                    } else {
-                        // SUCESSO - LIBERAR
-                        // Grava 'status: validado' e a data completa para o Admin ler
-                        db.ref('ingressos/' + idUnico).update({ 
-                            status: 'validado', 
-                            horario_validacao: new Date().toISOString() // Data formato ISO para o Admin
-                        });
-                        
-                        mostrarResultado("OK", dados.aluno, `ACESSO LIBERADO (Final ${idUnico.split('-').pop()})`, "bg-green-600");
-                        playAudio('success');
-                    }
-                } else {
-                    // NÃO ENCONTRADO
-                    mostrarResultado("INVALIDO", "DESCONHECIDO", "Código não existe no sistema.", "bg-slate-600");
-                }
-            });
-        }
-
-        function mostrarResultado(tipo, titulo, msg, cor) {
-            const card = document.getElementById('resultCard');
-            const icon = document.getElementById('statusIcon');
-            
-            card.className = `w-full max-w-md p-6 rounded-[2rem] shadow-xl border-2 border-white/10 ${cor}`;
-            card.classList.remove('hidden');
-            
-            document.getElementById('resAluno').innerText = titulo;
-            document.getElementById('resInfo').innerText = msg;
-            
-            if(tipo === "OK") icon.innerText = "✅";
-            else if(tipo === "ERRO") icon.innerText = "⛔";
-            else icon.innerText = "⚠️";
-
-            // Vibração se celular suportar
-            if(navigator.vibrate) navigator.vibrate(tipo === "OK" ? 100 : [100,50,100]);
-        }
-
-        function resetScanner() {
-            document.getElementById('resultCard').classList.add('hidden');
+        function closeResult() {
+            document.getElementById('result').classList.add('hidden');
             html5QrCode.resume();
-        }
-
-        function playAudio(type) {
-            // Opcional: Adicionar sons de bip aqui se desejar
         }
     </script>
 </body>
 </html>
-
-
