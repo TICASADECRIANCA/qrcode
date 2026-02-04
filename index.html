@@ -3,18 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CASAQR - Portal de Ingressos</title>
+    <title>CASAQR - Garantir Ingresso</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; }
-        .event-card { transition: all 0.3s ease; }
-        .event-card:hover { transform: translateY(-8px); }
     </style>
 </head>
 <body class="pb-12">
@@ -22,18 +19,15 @@
     <div id="overlay" class="hidden fixed inset-0 bg-white/95 z-[100] flex flex-col items-center justify-center p-4">
         <div id="loader" class="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-6"></div>
         <div id="successIcon" class="hidden text-6xl mb-4">✅</div>
-        <h3 id="statusMsg" class="text-2xl font-black text-slate-800 text-center">Processando Ingressos...</h3>
+        <h3 id="statusMsg" class="text-2xl font-black text-slate-800 text-center italic">Gerando seu Ingresso...</h3>
     </div>
 
-    <nav class="bg-white/80 backdrop-blur-md sticky top-0 z-40 p-5 shadow-sm border-b border-slate-100 mb-8">
+    <nav class="bg-white p-5 shadow-sm border-b border-slate-100 mb-8 sticky top-0 z-40">
         <div class="max-w-7xl mx-auto flex justify-between items-center px-4">
-            <div class="flex items-center gap-3">
-                <div class="w-11 h-11 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"></path></svg>
-                </div>
-                <span class="text-2xl font-black text-slate-800 tracking-tighter uppercase">CASA<span class="text-blue-600">QR</span></span>
+            <div class="flex items-center gap-3 font-black text-2xl uppercase italic tracking-tighter">
+                CASA<span class="text-blue-600">QR</span>
             </div>
-            <span class="bg-blue-50 text-blue-700 text-[10px] font-bold px-4 py-1.5 rounded-full uppercase tracking-widest border border-blue-100">Portal do Aluno</span>
+            <span class="text-[10px] font-black uppercase text-blue-600 bg-blue-50 px-3 py-1 rounded-full">Portal do Aluno</span>
         </div>
     </nav>
 
@@ -41,22 +35,24 @@
 
     <div id="modalIngresso" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-[2.5rem] p-8 max-w-lg w-full shadow-2xl overflow-y-auto max-h-[90vh]">
-            <h3 id="nomeEvTitle" class="text-2xl font-black mb-1 uppercase text-blue-600">Garantir Ingresso</h3>
-            <p class="text-[10px] text-gray-400 mb-6 font-bold uppercase italic">Validação de Segurança: CPF + Matrícula</p>
+            <h3 id="nomeEvTitle" class="text-2xl font-black mb-1 uppercase text-blue-600 italic">Garantir Ingresso</h3>
             
             <div class="space-y-4">
                 <div>
-                    <label class="text-[10px] font-black ml-4 text-gray-400 uppercase">CPF do Responsável (Financeiro)</label>
-                    <input type="number" id="cpfResponsavel" placeholder="Digite apenas números" class="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 ring-blue-500 border border-transparent font-black">
+                    <label class="text-[10px] font-black ml-4 text-gray-400 uppercase">CPF do Responsável Financeiro</label>
+                    <input type="number" id="cpfResponsavel" placeholder="Digite apenas números" class="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 ring-blue-500 font-black">
+                    
+                    <input type="text" id="nomeResponsavelAuto" placeholder="Nome do Responsável (Identificado ao validar matrícula)" readonly 
+                           class="w-full mt-2 p-3 bg-blue-50/50 rounded-xl text-[11px] font-black text-blue-800 border-none outline-none italic cursor-not-allowed">
                 </div>
                 
                 <div id="filhos" class="space-y-3 pt-4 border-t border-gray-100"></div>
 
-                <button onclick="addFilho()" class="text-blue-600 font-bold text-[10px] w-full py-2 uppercase hover:bg-blue-50 rounded-xl transition">+ Incluir outro aluno</button>
+                <button onclick="addFilho()" class="text-blue-600 font-bold text-[10px] w-full py-2 uppercase">+ Incluir outro filho</button>
                 
                 <div class="pt-4 space-y-2">
-                    <button onclick="processar()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg hover:bg-blue-700 transition">GERAR MEU INGRESSO</button>
-                    <button onclick="document.getElementById('modalIngresso').classList.add('hidden')" class="w-full py-3 text-gray-400 text-[10px] font-black uppercase">Cancelar</button>
+                    <button onclick="processar()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg hover:bg-blue-700 transition uppercase italic">Emitir Ingressos PDF</button>
+                    <button onclick="document.getElementById('modalIngresso').classList.add('hidden')" class="w-full py-3 text-gray-400 text-[10px] font-black uppercase">Sair</button>
                 </div>
             </div>
         </div>
@@ -76,21 +72,19 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-
         let currentEv = null;
 
         db.ref('eventos').on('value', snap => {
             const cont = document.getElementById('listaEventos'); cont.innerHTML = "";
             snap.forEach(i => {
-                const ev = i.val();
-                if(!ev.liberado) return;
+                const ev = i.val(); if(!ev.liberado) return;
                 cont.innerHTML += `
-                <div class="event-card bg-white rounded-[2.5rem] p-4 shadow-sm border border-gray-100 relative">
+                <div class="bg-white rounded-[2.5rem] p-4 shadow-sm border border-gray-100 relative group transition-all hover:shadow-xl">
                     <div class="h-52 rounded-[2rem] bg-cover bg-center mb-6" style="background-image: url('${ev.imagem}')"></div>
                     <div class="px-2 pb-2">
-                        <p class="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">${ev.data}</p>
-                        <h3 class="text-xl font-extrabold text-gray-800 leading-tight mb-6 h-14 overflow-hidden uppercase">${ev.nome}</h3>
-                        <button onclick="openM('${i.key}')" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-black transition shadow-lg">🎟️ GARANTIR INGRESSO</button>
+                        <p class="text-[10px] font-black text-blue-600 uppercase mb-1 tracking-widest">${ev.data}</p>
+                        <h3 class="text-xl font-black text-gray-800 leading-tight mb-6 h-14 overflow-hidden uppercase italic">${ev.nome}</h3>
+                        <button onclick="openM('${i.key}')" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black hover:bg-black transition shadow-lg">🎟️ GARANTIR INGRESSO</button>
                     </div>
                 </div>`;
             });
@@ -107,30 +101,30 @@
 
         async function verificarMatricula(inputMat) {
             const mat = inputMat.value;
-            const cpfResp = document.getElementById('cpfResponsavel').value.trim();
-            const campoNome = inputMat.previousElementSibling; 
+            const cpfDigitado = document.getElementById('cpfResponsavel').value.trim().replace(/\D/g, "");
+            const campoNomeAlu = inputMat.previousElementSibling; 
+            const campoRespAuto = document.getElementById('nomeResponsavelAuto');
             
-            if(!cpfResp || cpfResp.length < 5) {
-                alert("⚠️ Por favor, insira o CPF do responsável financeiro ANTES da matrícula!");
+            if(!cpfDigitado || cpfDigitado.length < 11) {
+                alert("⚠️ Digite seu CPF completo ANTES de colocar a matrícula!");
                 inputMat.value = ""; return;
             }
 
-            campoNome.placeholder = "Validando vínculo...";
             const snap = await db.ref('alunos_db/' + mat).once('value');
-            
             if(snap.exists()) {
                 const d = snap.val();
-                const cpfLimpo = cpfResp.replace(/\D/g, "");
-                // Lógica que permite CPF do Pai OU da Mãe
-                if(cpfLimpo === d.cpf_pai || cpfLimpo === d.cpf_mae) {
-                    campoNome.value = d.nome + (d.turma ? ` (${d.turma})` : "");
-                    campoNome.classList.add("text-blue-700");
+                if(cpfDigitado === d.cpf_pai) {
+                    campoNomeAlu.value = d.nome + " (" + d.turma + ")";
+                    campoRespAuto.value = "Identificado: " + d.nome_pai;
+                } else if(cpfDigitado === d.cpf_mae) {
+                    campoNomeAlu.value = d.nome + " (" + d.turma + ")";
+                    campoRespAuto.value = "Identificado: " + d.nome_mae;
                 } else {
-                    alert("❌ Conflito: Este CPF não está vinculado a esta matrícula como responsável financeiro.");
-                    inputMat.value = ""; campoNome.value = "";
+                    alert("❌ Conflito: Este CPF não está autorizado para esta matrícula.");
+                    inputMat.value = ""; campoNomeAlu.value = ""; campoRespAuto.value = "";
                 }
             } else {
-                alert("❌ Matrícula não encontrada!");
+                alert("❌ Matrícula não encontrada.");
                 inputMat.value = "";
             }
         }
@@ -139,18 +133,16 @@
             const div = document.createElement('div');
             div.className = "p-4 bg-blue-50/50 rounded-2xl border border-blue-100 mt-2";
             div.innerHTML = `
-                <input type="text" placeholder="Nome do Aluno" readonly class="n-aluno w-full bg-transparent font-black outline-none text-blue-900 text-xs mb-1 cursor-not-allowed">
+                <input type="text" placeholder="Nome do Aluno" readonly class="n-aluno w-full bg-transparent font-black outline-none text-blue-900 text-xs mb-1 cursor-not-allowed italic">
                 <input type="number" placeholder="Digite a Matrícula" class="m-aluno w-full bg-white p-3 rounded-xl border border-blue-100 text-sm outline-none font-bold" onchange="verificarMatricula(this)">
             `;
             document.getElementById('filhos').appendChild(div);
         }
 
         async function processar() {
-            const cpf = document.getElementById('cpfResponsavel').value;
             const nomes = document.querySelectorAll('.n-aluno');
             const mats = document.querySelectorAll('.m-aluno');
-
-            if(!cpf || nomes[0].value === "") return alert("Preencha o CPF e valide a matrícula!");
+            if(nomes[0].value === "") return alert("Valide a matrícula primeiro!");
 
             document.getElementById('modalIngresso').classList.add('hidden');
             document.getElementById('overlay').classList.remove('hidden');
@@ -160,36 +152,28 @@
                 const doc = new jsPDF();
                 
                 for(let i=0; i<nomes.length; i++) {
-                    const n = nomes[i].value; 
-                    const m = mats[i].value;
+                    const n = nomes[i].value; const m = mats[i].value;
                     const idUnico = `${m}-${Date.now().toString().slice(-4)}`;
-
                     if(i > 0) doc.addPage();
                     
                     doc.setFillColor(26, 62, 178); doc.roundedRect(10, 10, 190, 45, 5, 5, 'F');
                     doc.setTextColor(255, 255, 255); doc.setFontSize(22); doc.text(currentEv.nome.toUpperCase(), 105, 35, {align: 'center'});
-                    
-                    doc.setTextColor(100, 116, 139); doc.setFontSize(10); doc.text("ALUNO(A)", 20, 80);
                     doc.setTextColor(30, 41, 59); doc.setFontSize(18); doc.text(n.toUpperCase(), 20, 95);
 
                     const qrDiv = document.getElementById('qrcode-temp'); qrDiv.innerHTML = "";
                     new QRCode(qrDiv, { text: idUnico, width: 256, height: 256 });
-                    await new Promise(r => setTimeout(r, 150));
-                    const qrCanvas = qrDiv.querySelector('canvas');
-                    doc.addImage(qrCanvas.toDataURL("image/png"), 'PNG', 145, 75, 45, 45);
+                    await new Promise(r => setTimeout(r, 200));
+                    doc.addImage(qrDiv.querySelector('canvas').toDataURL("image/png"), 'PNG', 145, 75, 45, 45);
 
                     await db.ref('ingressos/' + idUnico).set({ 
-                        aluno: n, matricula: m, responsavel: "CPF: "+cpf, 
-                        evento: currentEv.nome, utilizado: false, data: new Date().toISOString() 
+                        aluno: n, matricula: m, evento: currentEv.nome, utilizado: false, data: new Date().toISOString() 
                     });
                 }
-
-                doc.save(`Ingressos_CASAQR.pdf`);
+                doc.save(`Ingresso_${Date.now()}.pdf`);
                 document.getElementById('loader').classList.add('hidden');
                 document.getElementById('successIcon').classList.remove('hidden');
-                document.getElementById('statusMsg').innerText = "Ingressos Gerados!";
+                document.getElementById('statusMsg').innerText = "Ingresso Emitido!";
                 setTimeout(() => location.reload(), 3000);
-
             } catch(e) { alert("Erro: " + e.message); location.reload(); }
         }
     </script>
