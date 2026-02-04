@@ -42,7 +42,7 @@
     <div id="modalIngresso" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <div id="modalContent" class="bg-white rounded-[2.5rem] p-8 max-w-lg w-full shadow-2xl overflow-y-auto max-h-[90vh] animate__animated">
             <div class="flex justify-between items-start mb-6">
-                <h3 id="nomeEvTitle" class="text-2xl font-black uppercase text-slate-800 italic">Evento</h3>
+                <h3 id="nomeEvTitle" class="text-2xl font-black uppercase text-slate-800 italic leading-tight">Evento</h3>
                 <button onclick="fecharModal()" class="text-slate-300 hover:text-red-500 transition-colors">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="3"></path></svg>
                 </button>
@@ -50,10 +50,11 @@
             
             <div class="space-y-4">
                 <div>
-                    <label class="text-[10px] font-black ml-4 text-slate-400 uppercase tracking-widest">Seu CPF (Responsável)</label>
-                    <input type="number" id="cpfResponsavel" placeholder="000.000.000-00" class="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 ring-blue-500 font-black text-lg transition-all">
-                    <input type="text" id="nomeResponsavelAuto" placeholder="Responsável não identificado" readonly 
-                           class="w-full mt-2 p-3 bg-blue-50 rounded-xl text-[11px] font-black text-blue-700 border-none outline-none italic">
+                    <label class="text-[10px] font-black ml-4 text-slate-400 uppercase tracking-widest">CPF do Responsável</label>
+                    <input type="number" id="cpfResponsavel" oninput="buscarResponsavelPorCPF()" placeholder="Digite apenas números" class="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 ring-blue-500 font-black text-lg transition-all">
+                    
+                    <input type="text" id="nomeResponsavelAuto" placeholder="Aguardando CPF..." readonly 
+                           class="w-full mt-2 p-3 bg-blue-50 rounded-xl text-[11px] font-black text-blue-700 border-none outline-none italic transition-all">
                 </div>
                 
                 <div id="filhos" class="space-y-3 pt-2"></div>
@@ -83,6 +84,7 @@
         const db = firebase.database();
         let currentEv = null;
 
+        // Renderiza Eventos
         db.ref('eventos').on('value', snap => {
             const cont = document.getElementById('listaEventos'); cont.innerHTML = "";
             snap.forEach(i => {
@@ -93,17 +95,57 @@
                     <div class="px-2 pb-2">
                         <p class="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">${ev.data}</p>
                         <h3 class="text-xl font-black text-slate-800 leading-tight mb-6 h-14 overflow-hidden uppercase italic">${ev.nome}</h3>
-                        <button onclick="abrirModal('${i.key}')" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black hover:bg-blue-600 transition shadow-lg">GARANTIR SEUS INGRESSOS</button>
+                        <button onclick="abrirModal('${i.key}')" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black hover:bg-blue-600 transition shadow-lg">RESGATAR</button>
                     </div>
                 </div>`;
             });
         });
+
+        // BUSCA INSTANTÂNEA DE NOME PELO CPF
+        async function buscarResponsavelPorCPF() {
+            const cpfInput = document.getElementById('cpfResponsavel');
+            const nomeRespAuto = document.getElementById('nomeResponsavelAuto');
+            const cpf = cpfInput.value.trim().replace(/\D/g, "");
+
+            if (cpf.length === 11) {
+                nomeRespAuto.value = "🔍 Localizando responsável...";
+                nomeRespAuto.classList.add('animate__pulse');
+                
+                const snap = await db.ref('alunos_db').once('value');
+                let encontrado = false;
+
+                snap.forEach(alunoSnap => {
+                    const d = alunoSnap.val();
+                    if (cpf === d.cpf_pai) {
+                        nomeRespAuto.value = "✅ Identificado: " + d.nome_pai;
+                        encontrado = true; return true; 
+                    } else if (cpf === d.cpf_mae) {
+                        nomeRespAuto.value = "✅ Identificada: " + d.nome_mae;
+                        encontrado = true; return true;
+                    }
+                });
+
+                if (!encontrado) {
+                    nomeRespAuto.value = "⚠️ CPF não encontrado na base.";
+                    nomeRespAuto.classList.remove('text-blue-700');
+                    nomeRespAuto.classList.add('text-red-500');
+                } else {
+                    nomeRespAuto.classList.remove('text-red-500');
+                    nomeRespAuto.classList.add('text-blue-700');
+                }
+                nomeRespAuto.classList.remove('animate__pulse');
+            } else {
+                nomeRespAuto.value = "Aguardando CPF completo...";
+            }
+        }
 
         async function abrirModal(key) {
             const snap = await db.ref('eventos/'+key).once('value');
             currentEv = snap.val();
             document.getElementById('nomeEvTitle').innerText = currentEv.nome;
             document.getElementById('filhos').innerHTML = "";
+            document.getElementById('cpfResponsavel').value = "";
+            document.getElementById('nomeResponsavelAuto').value = "Aguardando CPF...";
             addFilho();
             const modal = document.getElementById('modalIngresso');
             const content = document.getElementById('modalContent');
@@ -125,24 +167,19 @@
             const mat = inputMat.value;
             const cpf = document.getElementById('cpfResponsavel').value.trim().replace(/\D/g, "");
             const campoNomeAlu = inputMat.previousElementSibling; 
-            const campoRespAuto = document.getElementById('nomeResponsavelAuto');
             
-            if(cpf.length < 11) { alert("Digite o CPF primeiro!"); inputMat.value = ""; return; }
+            if(cpf.length < 11) { alert("Digite o CPF completo primeiro!"); inputMat.value = ""; return; }
 
             const snap = await db.ref('alunos_db/' + mat).once('value');
             if(snap.exists()) {
                 const d = snap.val();
-                if(cpf === d.cpf_pai) {
+                if(cpf === d.cpf_pai || cpf === d.cpf_mae) {
                     campoNomeAlu.value = d.nome + " [" + d.turma + "]";
-                    campoRespAuto.value = "Responsável: " + d.nome_pai;
-                } else if(cpf === d.cpf_mae) {
-                    campoNomeAlu.value = d.nome + " [" + d.turma + "]";
-                    campoRespAuto.value = "Responsável: " + d.nome_mae;
                 } else {
-                    alert("CPF não autorizado para esta matrícula.");
+                    alert("⚠️ Este CPF não é responsável por esta matrícula.");
                     inputMat.value = "";
                 }
-            } else { alert("Matrícula não encontrada."); inputMat.value = ""; }
+            } else { alert("Matrícula não cadastrada."); inputMat.value = ""; }
         }
 
         function addFilho() {
@@ -158,7 +195,7 @@
         async function processar() {
             const nomes = document.querySelectorAll('.n-aluno');
             const mats = document.querySelectorAll('.m-aluno');
-            if(!nomes[0].value) return alert("Valide ao menos um aluno!");
+            if(!nomes[0].value) return alert("Valide ao menos uma matrícula!");
 
             fecharModal();
             document.getElementById('overlay').classList.remove('hidden');
@@ -182,7 +219,7 @@
 
                     const qrDiv = document.getElementById('qrcode-temp'); qrDiv.innerHTML = "";
                     new QRCode(qrDiv, { text: idUnico, width: 256, height: 256 });
-                    await new Promise(r => setTimeout(r, 300));
+                    await new Promise(r => setTimeout(r, 400));
                     doc.addImage(qrDiv.querySelector('canvas').toDataURL("image/png"), 'PNG', 140, 75, 45, 45);
 
                     await db.ref('ingressos/' + idUnico).set({ 
@@ -192,11 +229,10 @@
                 doc.save(`CASAQR_${currentEv.nome}.pdf`);
                 document.getElementById('loader').classList.add('hidden');
                 document.getElementById('successIcon').classList.remove('hidden');
-                document.getElementById('statusMsg').innerText = "Download concluído!";
+                document.getElementById('statusMsg').innerText = "Sucesso!";
                 setTimeout(() => location.reload(), 2500);
             } catch(e) { alert("Erro: " + e.message); location.reload(); }
         }
     </script>
 </body>
 </html>
-
