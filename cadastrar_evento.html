@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CASAQR - Gestão Administrativa Completa</title>
+    <title>CASAQR - Gestão Administrativa Master</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
@@ -12,12 +12,14 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .switch { position: relative; display: inline-block; width: 42px; height: 22px; }
+        
+        /* Switch Style */
+        .switch { position: relative; display: inline-block; width: 38px; height: 20px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 20px; }
-        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: #2563eb; }
-        input:checked + .slider:before { transform: translateX(20px); }
+        input:checked + .slider:before { transform: translateX(18px); }
     </style>
 </head>
 <body class="min-h-screen pb-12">
@@ -27,91 +29,85 @@
             <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg">
                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" stroke-width="2.5"></path></svg>
             </div>
-            <div class="font-extrabold text-xl tracking-tighter uppercase">CASA<span class="text-blue-400">QR</span> <span class="text-slate-500 font-medium text-xs ml-1 italic">Admin</span></div>
+            <div class="font-extrabold text-xl tracking-tighter uppercase italic">CASA<span class="text-blue-400">QR</span> ADMIN</div>
         </div>
         <div class="flex gap-4">
-            <button onclick="window.location.href='index.html'" class="text-xs font-black uppercase text-slate-400 hover:text-white transition">Portal Aluno</button>
-            <button onclick="location.reload()" class="bg-blue-600 px-4 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-blue-700 transition">Atualizar Dados</button>
+            <button onclick="window.location.href='index.html'" class="text-[10px] font-black uppercase text-slate-400 hover:text-white transition">Ver Portal</button>
+            <button onclick="location.reload()" class="bg-blue-600 px-4 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-blue-700 transition">Sincronizar</button>
         </div>
     </nav>
 
-    <div class="p-6 md:px-12 max-w-7xl mx-auto w-full grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+    <div class="p-6 md:px-12 max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
         <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
-            <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest">Ingressos Gerados</p>
+            <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest">Total Ingressos</p>
             <h3 id="dash-total" class="text-4xl font-black text-slate-800">0</h3>
         </div>
         <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 border-l-4 border-l-amber-500">
-            <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest">Pendentes</p>
+            <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest">Aguardando Uso</p>
             <h3 id="dash-pendentes" class="text-4xl font-black text-slate-800">0</h3>
         </div>
         <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 border-l-4 border-l-emerald-500">
-            <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest">Validados</p>
+            <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest">Check-ins Feitos</p>
             <h3 id="dash-validados" class="text-4xl font-black text-emerald-600">0</h3>
         </div>
     </div>
 
-    <main class="p-6 md:px-12 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <main class="p-6 md:px-12 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         <div class="lg:col-span-4 space-y-6">
             
             <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
-                <h2 class="text-xs font-black text-slate-800 mb-2 uppercase italic">📊 Importar Alunos</h2>
+                <h2 class="text-xs font-black text-slate-800 mb-2 uppercase italic">📊 Banco de Dados</h2>
+                <p class="text-[9px] text-slate-400 mb-4 font-bold uppercase">Formato: mat, nome, turma, cpfP, nomeP, cpfM, nomeM</p>
                 <input type="file" id="csvFile" accept=".csv" class="hidden" onchange="document.getElementById('fileName').innerText = this.files[0].name">
-                <label for="csvFile" class="flex items-center justify-center w-full p-4 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer hover:border-blue-500 mb-3 transition text-center">
-                    <span class="text-[10px] font-black text-slate-500 uppercase" id="fileName">Anexar Planilha CSV</span>
+                <label for="csvFile" class="flex items-center justify-center w-full p-4 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer hover:border-blue-500 mb-3 transition">
+                    <span class="text-[10px] font-black text-slate-500 uppercase" id="fileName">Anexar Alunos CSV</span>
                 </label>
-                <button onclick="importarCSV()" class="w-full bg-slate-800 text-white py-3 rounded-xl font-black text-xs uppercase hover:bg-black transition">Atualizar Banco</button>
+                <button onclick="importarCSV()" class="w-full bg-slate-800 text-white py-3 rounded-xl font-black text-xs uppercase hover:bg-black transition">Atualizar Base</button>
             </div>
 
             <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
-                <h2 class="text-xs font-black text-slate-800 mb-4 uppercase italic italic">⚙️ Configurar Evento</h2>
+                <h2 class="text-xs font-black text-slate-800 mb-4 uppercase italic">⚙️ Novo Evento</h2>
                 <div class="space-y-3">
                     <input type="text" id="nome" placeholder="Nome do Evento" class="w-full p-3 bg-slate-50 rounded-xl outline-none font-bold text-sm">
-                    <input type="text" id="data" placeholder="Data Ex: 10/Out" class="w-full p-3 bg-slate-50 rounded-xl outline-none font-bold text-sm">
-                    <input type="text" id="imagem" placeholder="Link da Imagem" class="w-full p-3 bg-slate-50 rounded-xl outline-none font-bold text-[10px]">
+                    <input type="text" id="data" placeholder="Data (Ex: 15 Out, 19h)" class="w-full p-3 bg-slate-50 rounded-xl outline-none font-bold text-sm">
+                    <input type="text" id="imagem" placeholder="URL da Imagem de Capa" class="w-full p-3 bg-slate-50 rounded-xl outline-none font-bold text-[10px]">
                     <div class="grid grid-cols-2 gap-2">
-                        <input type="number" id="limit" placeholder="Qtd/Aluno" class="p-3 bg-slate-50 rounded-xl outline-none font-bold text-sm">
+                        <input type="number" id="limit" placeholder="Ingr/Aluno" class="p-3 bg-slate-50 rounded-xl outline-none font-bold text-sm">
                         <input type="number" id="estoqueAvulso" placeholder="Estoque" class="p-3 bg-slate-50 rounded-xl outline-none font-bold text-sm">
                     </div>
-                    <button onclick="salvarEvento()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-black text-xs uppercase hover:bg-blue-700 transition">Ativar Evento</button>
+                    <button onclick="salvarEvento()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-black text-xs uppercase hover:bg-blue-700 transition shadow-lg shadow-blue-200">Publicar Evento</button>
                 </div>
             </div>
 
-            <div class="bg-slate-900 p-6 rounded-[2rem] shadow-xl text-white border border-slate-800">
-                <h2 class="text-xs font-black mb-4 uppercase italic">🎟️ Emissão Manual (Avulsa)</h2>
+            <div class="bg-slate-900 p-6 rounded-[2rem] shadow-xl text-white">
+                <h2 class="text-xs font-black mb-4 uppercase italic">🎟️ Emissão Manual</h2>
                 <div class="space-y-3">
-                    <select id="avulsoEvento" class="w-full p-3 bg-slate-800 rounded-xl outline-none border-none font-bold text-xs text-slate-400"></select>
-                    
-                    <input type="number" id="avulsoCpfResp" placeholder="CPF do Responsável" class="w-full p-3 bg-slate-800 rounded-xl outline-none border-none font-bold text-sm text-white">
-                    
-                    <div class="relative">
-                        <input type="text" id="avulsoMatricula" oninput="validarVinculoAvulso(this.value)" placeholder="Matrícula do Aluno" class="w-full p-3 bg-slate-800 rounded-xl outline-none border-none font-bold text-sm text-white">
-                        <div id="statusAvulso" class="absolute right-3 top-3 text-[9px] font-black uppercase"></div>
-                    </div>
-
-                    <input type="text" id="avulsoNome" placeholder="Nome do Aluno (Auto)" readonly class="w-full p-3 bg-slate-800/50 rounded-xl font-bold text-blue-400 text-sm cursor-not-allowed">
-                    
-                    <button onclick="gerarIngressoAvulso()" class="w-full bg-emerald-500 text-white py-3 rounded-xl font-black shadow-lg hover:bg-emerald-600 transition uppercase text-[10px]">Emitir Ingresso</button>
+                    <select id="avulsoEvento" class="w-full p-3 bg-slate-800 rounded-xl outline-none border-none font-bold text-xs text-slate-300"></select>
+                    <input type="number" id="avulsoMat" placeholder="Matrícula do Aluno" class="w-full p-3 bg-slate-800 rounded-xl outline-none font-bold text-sm text-white">
+                    <input type="text" id="avulsoNome" placeholder="Nome do Aluno" class="w-full p-3 bg-slate-800 rounded-xl outline-none font-bold text-sm text-white">
+                    <button onclick="gerarAvulso()" class="w-full bg-emerald-500 text-white py-3 rounded-xl font-black shadow-lg hover:bg-emerald-600 transition uppercase text-[10px]">Gerar no Banco</button>
                 </div>
             </div>
         </div>
 
         <div class="lg:col-span-8 space-y-6">
+            
             <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200">
-                <h2 class="text-sm font-black text-slate-800 mb-4 uppercase">Eventos Ativos</h2>
+                <h2 class="text-sm font-black text-slate-800 mb-4 uppercase italic">Eventos em Andamento</h2>
                 <div id="listaAdmin" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
             </div>
 
             <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200">
                 <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-                    <h2 class="text-xl font-black text-slate-800 italic uppercase">Controle de Fluxo</h2>
-                    <input type="text" id="filtroNome" oninput="renderizarTabela()" placeholder="🔍 Buscar por nome..." class="w-full md:w-64 p-3 bg-slate-100 rounded-xl outline-none font-bold text-xs">
+                    <h2 class="text-xl font-black text-slate-800 italic uppercase">Fluxo de Ingressos</h2>
+                    <input type="text" id="filtroNome" oninput="renderizarTabela()" placeholder="🔍 Pesquisar..." class="w-full md:w-64 p-3 bg-slate-100 rounded-xl outline-none font-bold text-xs">
                 </div>
                 <div class="overflow-x-auto custom-scrollbar">
                     <table class="w-full text-left">
                         <thead>
                             <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
-                                <th class="pb-4 px-2">Aluno / Matrícula</th>
+                                <th class="pb-4 px-2">Aluno</th>
                                 <th class="pb-4">Evento</th>
                                 <th class="pb-4 text-center">Status</th>
                                 <th class="pb-4 text-right">Ação</th>
@@ -136,9 +132,9 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-
         let ingressosCache = [];
 
+        // 1. Importar CSV com 7 colunas
         function importarCSV() {
             const file = document.getElementById('csvFile').files[0];
             if (!file) return alert("Selecione o arquivo!");
@@ -149,63 +145,48 @@
                 lines.forEach((line, index) => {
                     if (index === 0) return;
                     const c = line.split(','); 
-                    if (c.length >= 5) {
+                    if (c.length >= 7) {
                         const matricula = c[0].trim();
                         updates['alunos_db/' + matricula] = {
-                            nome: c[1].trim(), turma: c[2].trim(), 
-                            cpf_pai: c[3].trim().replace(/\D/g, ""), 
-                            cpf_mae: c[4].trim().replace(/\D/g, "")
+                            nome: c[1].trim(), turma: c[2].trim(),
+                            cpf_pai: c[3].trim().replace(/\D/g, ""), nome_pai: c[4].trim(),
+                            cpf_mae: c[5].trim().replace(/\D/g, ""), nome_mae: c[6].trim()
                         };
                     }
                 });
-                db.ref().update(updates).then(() => { alert("✅ Banco Atualizado!"); location.reload(); });
+                db.ref().update(updates).then(() => { alert("✅ Base de 7 colunas atualizada!"); location.reload(); });
             };
             reader.readAsText(file);
         }
 
-        async function validarVinculoAvulso(mat) {
-            const cpfDigitado = document.getElementById('avulsoCpfResp').value;
-            const status = document.getElementById('statusAvulso');
-            const nomeInput = document.getElementById('avulsoNome');
-            if(!cpfDigitado) { alert("Digite o CPF primeiro!"); document.getElementById('avulsoMatricula').value = ""; return; }
-            if(mat.length < 2) return;
-            const snap = await db.ref('alunos_db/' + mat).once('value');
-            if(snap.exists()) {
-                const d = snap.val();
-                if(cpfDigitado === d.cpf_pai || cpfDigitado === d.cpf_mae) {
-                    nomeInput.value = d.nome;
-                    status.innerText = "✅ OK"; status.className = "absolute right-3 top-3 text-[9px] font-black text-emerald-400 uppercase";
-                } else {
-                    nomeInput.value = "";
-                    status.innerText = "❌ ERRO"; status.className = "absolute right-3 top-3 text-[9px] font-black text-red-400 uppercase";
-                }
-            }
-        }
-
+        // 2. Salvar Evento
         function salvarEvento() {
             const n = document.getElementById('nome').value;
             const d = document.getElementById('data').value;
-            if(!n || !d) return alert("Preencha Nome e Data!");
+            if(!n || !d) return alert("Nome e Data são obrigatórios!");
             db.ref('eventos').push({
                 nome: n, data: d,
                 imagem: document.getElementById('imagem').value || 'https://placehold.co/600x400',
                 limit_ingressos: document.getElementById('limit').value || 1,
                 estoque_avulso: document.getElementById('estoqueAvulso').value || 0,
                 liberado: true
-            }).then(() => alert("Evento Criado!"));
+            }).then(() => { alert("Evento Publicado!"); location.reload(); });
         }
 
-        function gerarIngressoAvulso() {
+        // 3. Emissão Manual (Avulsa)
+        function gerarAvulso() {
             const ev = document.getElementById('avulsoEvento').options[document.getElementById('avulsoEvento').selectedIndex]?.text;
             const nome = document.getElementById('avulsoNome').value;
-            if(!nome) return alert("Validação necessária!");
-            const id = `${document.getElementById('avulsoMatricula').value}-${Date.now().toString().slice(-4)}`;
+            const mat = document.getElementById('avulsoMat').value;
+            if(!nome || !mat || ev === "Evento...") return alert("Preencha todos os dados!");
+            const id = `${mat}-${Date.now().toString().slice(-4)}`;
             db.ref('ingressos/' + id).set({
-                aluno: nome, matricula: document.getElementById('avulsoMatricula').value,
-                responsavel: "EMISSÃO MANUAL", evento: ev, utilizado: false, data: new Date().toISOString()
-            }).then(() => alert("Ingresso Emitido!"));
+                aluno: nome, matricula: mat, responsavel: "MANUAL", 
+                evento: ev, utilizado: false, data: new Date().toISOString()
+            }).then(() => alert("Ingresso Gerado no Banco!"));
         }
 
+        // 4. Carregar Eventos e Ingressos
         db.ref('eventos').on('value', snap => {
             const sel = document.getElementById('avulsoEvento');
             const list = document.getElementById('listaAdmin');
@@ -215,28 +196,33 @@
                 const ev = i.val();
                 sel.innerHTML += `<option value="${i.key}">${ev.nome}</option>`;
                 list.innerHTML += `
-                    <div class="bg-slate-50 rounded-[2rem] border border-slate-100 overflow-hidden flex flex-col p-4">
-                        <div class="flex justify-between items-center">
-                            <h4 class="font-black text-slate-800 text-[10px] uppercase truncate">${ev.nome}</h4>
-                            <label class="switch"><input type="checkbox" ${ev.liberado ? 'checked' : ''} onchange="db.ref('eventos/${i.key}').update({liberado: !${ev.liberado}})"> <span class="slider"></span></label>
+                    <div class="bg-slate-50 rounded-3xl p-4 border border-slate-100 flex flex-col justify-between">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="font-black text-slate-800 text-xs uppercase truncate w-32">${ev.nome}</h4>
+                                <p class="text-[9px] text-blue-600 font-bold">${ev.data}</p>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" ${ev.liberado ? 'checked' : ''} onchange="db.ref('eventos/${i.key}').update({liberado: !${ev.liberado}})">
+                                <span class="slider"></span>
+                            </label>
                         </div>
-                        <p class="text-[9px] text-blue-600 font-bold mt-1">${ev.data}</p>
-                        <button onclick="db.ref('eventos/${i.key}').remove()" class="text-red-400 text-[8px] font-bold mt-4 text-left hover:text-red-600">REMOVER EVENTO</button>
+                        <button onclick="if(confirm('Excluir evento?')) db.ref('eventos/${i.key}').remove()" class="text-[8px] font-black text-red-400 mt-4 uppercase hover:text-red-600">Remover</button>
                     </div>`;
             });
         });
 
         db.ref('ingressos').on('value', snap => {
             ingressosCache = [];
-            let total = 0, pendentes = 0, validados = 0;
+            let total = 0, pen = 0, val = 0;
             snap.forEach(i => {
                 const ing = i.val();
                 ingressosCache.push({key: i.key, ...ing});
-                total++; ing.utilizado ? validados++ : pendentes++;
+                total++; ing.utilizado ? val++ : pen++;
             });
             document.getElementById('dash-total').innerText = total;
-            document.getElementById('dash-pendentes').innerText = pendentes;
-            document.getElementById('dash-validados').innerText = validados;
+            document.getElementById('dash-pendentes').innerText = pen;
+            document.getElementById('dash-validados').innerText = val;
             renderizarTabela();
         });
 
@@ -247,17 +233,17 @@
             ingressosCache.forEach(ing => {
                 if(ing.aluno.toLowerCase().includes(filtro)) {
                     tbody.innerHTML += `
-                        <tr class="border-b border-slate-50">
+                        <tr class="border-b border-slate-50 hover:bg-slate-50">
                             <td class="py-4 px-2">
                                 <div class="font-black text-slate-700 uppercase text-[12px]">${ing.aluno}</div>
-                                <div class="text-[9px] text-slate-400 font-bold uppercase">Matrícula: ${ing.matricula}</div>
+                                <div class="text-[9px] text-slate-400 font-bold uppercase">Mat: ${ing.matricula}</div>
                             </td>
                             <td class="py-4 text-slate-500 text-[10px] font-bold uppercase">${ing.evento}</td>
                             <td class="py-4 text-center">
                                 <span class="px-3 py-1 rounded-full text-[9px] font-black ${ing.utilizado ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}">${ing.utilizado ? 'VALIDADO' : 'PENDENTE'}</span>
                             </td>
                             <td class="py-4 text-right">
-                                <button onclick="db.ref('ingressos/${ing.key}').remove()" class="text-slate-300 hover:text-red-500 text-[10px] font-bold">EXCLUIR</button>
+                                <button onclick="db.ref('ingressos/${ing.key}').remove()" class="text-slate-300 hover:text-red-500 text-[10px] font-bold uppercase">Excluir</button>
                             </td>
                         </tr>`;
                 }
