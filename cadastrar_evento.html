@@ -3,17 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CASAQR - Gestão Total</title>
-    
+    <title>CASAQR - Gestão Administrativa</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; color: #1e293b; }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
         .switch { position: relative; display: inline-block; width: 42px; height: 22px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 20px; }
@@ -22,77 +18,58 @@
         input:checked + .slider:before { transform: translateX(20px); }
     </style>
 </head>
-<body class="min-h-screen pb-12">
+<body class="pb-12">
 
-    <nav class="bg-slate-900 text-white p-4 px-8 flex justify-between items-center shadow-2xl sticky top-0 z-50">
+    <nav class="bg-slate-900 text-white p-4 px-8 flex justify-between items-center sticky top-0 z-50">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg">
                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" stroke-width="2.5"></path></svg>
             </div>
-            <div class="font-extrabold text-xl tracking-tighter uppercase">CASA<span class="text-blue-400">QR</span> <span class="text-slate-500 font-medium text-xs ml-1">ADMIN</span></div>
+            <span class="font-extrabold text-xl uppercase tracking-tighter">CASA<span class="text-blue-400">QR</span> ADMIN</span>
         </div>
-        <button onclick="location.reload()" class="bg-blue-600 px-4 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-blue-700 transition">Atualizar Painel</button>
+        <button onclick="window.location.href='index.html'" class="text-[10px] font-black uppercase bg-white/10 px-4 py-2 rounded-lg hover:bg-white/20 transition">Sair do Painel</button>
     </nav>
 
-    <main class="p-6 md:px-12 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 mt-4">
+    <main class="p-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         <div class="lg:col-span-4 space-y-6">
             
             <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
-                <h2 class="text-sm font-black text-slate-800 mb-1 uppercase italic">📊 Importar Banco de Alunos</h2>
-                <p class="text-[9px] text-slate-400 font-bold mb-4 uppercase">CSV: matricula, nome, turma, cpf_pai, cpf_mae</p>
-                
-                <input type="file" id="csvFile" accept=".csv" class="hidden">
-                <label for="csvFile" class="flex items-center justify-center w-full p-4 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer hover:border-blue-500 mb-3 transition">
-                    <span class="text-[10px] font-black text-slate-500 uppercase" id="fileName">Selecionar CSV</span>
+                <h2 class="text-xs font-black text-slate-800 mb-2 uppercase">📊 Importar Banco de Alunos</h2>
+                <p class="text-[9px] text-slate-400 mb-4 font-bold">FORMATO: matricula, nome, turma, cpf_pai, cpf_mae</p>
+                <input type="file" id="csvFile" accept=".csv" class="hidden" onchange="document.getElementById('fileName').innerText = this.files[0].name">
+                <label for="csvFile" class="flex flex-col items-center justify-center w-full p-4 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer hover:border-blue-500 mb-3">
+                    <span class="text-[10px] font-black text-slate-500 uppercase" id="fileName">Clique para anexar CSV</span>
                 </label>
-                <button onclick="importarCSV()" class="w-full bg-slate-800 text-white py-3 rounded-xl font-black text-xs shadow-lg hover:bg-black transition uppercase">Carregar Alunos</button>
+                <button onclick="importarCSV()" class="w-full bg-slate-800 text-white py-3 rounded-xl font-black text-xs uppercase hover:bg-black transition">Carregar Banco</button>
             </div>
 
             <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
-                <h2 class="text-sm font-black text-slate-800 mb-4 uppercase italic">⚙️ Configurar Evento</h2>
+                <h2 class="text-xs font-black text-slate-800 mb-4 uppercase">⚙️ Criar Novo Evento</h2>
                 <div class="space-y-3">
-                    <input type="text" id="nome" placeholder="Nome do Evento" class="w-full p-3 bg-slate-50 rounded-xl outline-none focus:ring-2 ring-blue-500 font-bold text-sm">
-                    <input type="text" id="data" placeholder="Data (Ex: 12/Out)" class="w-full p-3 bg-slate-50 rounded-xl outline-none focus:ring-2 ring-blue-500 font-bold text-sm">
-                    <input type="text" id="imagem" placeholder="Link da Imagem" class="w-full p-3 bg-slate-50 rounded-xl outline-none focus:ring-2 ring-blue-500 font-bold text-[10px]">
+                    <input type="text" id="nome" placeholder="Nome do Evento" class="w-full p-3 bg-slate-50 rounded-xl outline-none font-bold text-sm">
+                    <input type="text" id="data" placeholder="Data (Ex: 10/Out às 19h)" class="w-full p-3 bg-slate-50 rounded-xl outline-none font-bold text-sm">
+                    <input type="text" id="imagem" placeholder="Link da Imagem" class="w-full p-3 bg-slate-50 rounded-xl outline-none font-bold text-[10px]">
                     <div class="grid grid-cols-2 gap-2">
-                        <input type="number" id="limit" placeholder="Qtd/Aluno" class="p-3 bg-slate-50 rounded-xl outline-none focus:ring-2 ring-blue-500 font-bold text-sm">
-                        <input type="number" id="estoqueAvulso" placeholder="Estoque" class="p-3 bg-slate-50 rounded-xl outline-none focus:ring-2 ring-blue-500 font-bold text-sm">
+                        <input type="number" id="limit" placeholder="Qtd/Aluno" class="p-3 bg-slate-50 rounded-xl outline-none font-bold text-sm">
+                        <input type="number" id="estoqueAvulso" placeholder="Estoque" class="p-3 bg-slate-50 rounded-xl outline-none font-bold text-sm">
                     </div>
-                    <button onclick="salvarEvento()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-black shadow-lg hover:bg-blue-700 transition uppercase text-xs">Criar Evento</button>
-                </div>
-            </div>
-
-            <div class="bg-slate-900 p-6 rounded-[2rem] shadow-xl text-white border border-slate-800">
-                <h2 class="text-sm font-black mb-4 uppercase italic">🎟️ Emissão Avulsa</h2>
-                <div class="space-y-3">
-                    <select id="avulsoEvento" class="w-full p-3 bg-slate-800 rounded-xl outline-none border-none font-bold text-xs text-slate-400"></select>
-                    
-                    <input type="number" id="avulsoCpfResp" placeholder="CPF do Responsável" class="w-full p-3 bg-slate-800 rounded-xl outline-none border-none font-bold text-sm">
-                    
-                    <div class="relative">
-                        <input type="text" id="avulsoMatricula" oninput="validarVinculoAvulso(this.value)" placeholder="Matrícula do Aluno" class="w-full p-3 bg-slate-800 rounded-xl outline-none border-none font-bold text-sm">
-                        <div id="statusAvulso" class="absolute right-3 top-3 text-[9px] font-black"></div>
-                    </div>
-
-                    <input type="text" id="avulsoNome" placeholder="Nome do Aluno (Auto)" readonly class="w-full p-3 bg-slate-800/50 rounded-xl font-bold text-blue-400 text-sm cursor-not-allowed">
-                    
-                    <button onclick="gerarIngressoAvulso()" class="w-full bg-emerald-500 text-white py-3 rounded-xl font-black shadow-lg hover:bg-emerald-600 transition uppercase text-xs">Emitir Ingresso</button>
+                    <button onclick="salvarEvento()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-black text-xs uppercase hover:bg-blue-700 transition">Ativar Evento</button>
                 </div>
             </div>
         </div>
 
         <div class="lg:col-span-8 space-y-6">
             <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200">
-                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-                    <h2 class="text-xl font-black text-slate-800 italic">Controle de Ingressos</h2>
-                    <input type="text" id="filtroNome" oninput="renderizarTabela()" placeholder="🔍 Buscar aluno..." class="w-full md:w-64 p-3 bg-slate-100 rounded-xl outline-none font-bold text-sm">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-black text-slate-800 uppercase italic tracking-tighter">Fluxo de Ingressos</h2>
+                    <input type="text" id="filtroNome" oninput="renderizarTabela()" placeholder="🔍 Buscar por nome..." class="p-3 bg-slate-100 rounded-xl outline-none font-bold text-xs w-64">
                 </div>
-                <div class="overflow-x-auto custom-scrollbar">
+                <div class="overflow-x-auto">
                     <table class="w-full text-left">
                         <thead>
-                            <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
-                                <th class="pb-4 px-2">Aluno / Matrícula</th>
+                            <tr class="text-[10px] font-black text-slate-400 uppercase border-b border-slate-100">
+                                <th class="pb-4">Aluno / Matrícula</th>
                                 <th class="pb-4">Evento</th>
                                 <th class="pb-4 text-center">Status</th>
                                 <th class="pb-4 text-right">Ação</th>
@@ -118,61 +95,39 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let cacheIngressos = [];
+        let ingressosCache = [];
 
-        // FUNÇÃO: IMPORTAR CSV
         function importarCSV() {
             const file = document.getElementById('csvFile').files[0];
-            if (!file) return alert("Selecione o arquivo CSV!");
+            if (!file) return alert("Selecione o arquivo!");
             const reader = new FileReader();
             reader.onload = function(e) {
-                const lines = e.target.result.split('\n');
+                const lines = e.target.result.split(/\r?\n/).filter(line => line.trim() !== "");
                 const updates = {};
                 lines.forEach((line, index) => {
-                    if (index === 0 || !line.trim()) return;
-                    const c = line.split(',');
+                    if (index === 0) return;
+                    const c = line.split(','); // Mude para ';' se seu Excel usar ponto-e-virgula
                     if (c.length >= 5) {
-                        updates['alunos_db/' + c[0].trim()] = {
-                            nome: c[1].trim(), turma: c[2].trim(), cpf_pai: c[3].trim(), cpf_mae: c[4].trim()
+                        const matricula = c[0].trim();
+                        updates['alunos_db/' + matricula] = {
+                            nome: c[1].trim(), 
+                            turma: c[2].trim(), 
+                            cpf_pai: c[3].trim().replace(/\D/g, ""), 
+                            cpf_mae: c[4].trim().replace(/\D/g, "")
                         };
                     }
                 });
-                db.ref().update(updates).then(() => alert("Banco de Alunos Atualizado!"));
+                db.ref().update(updates).then(() => { alert("✅ Banco Atualizado!"); location.reload(); });
             };
             reader.readAsText(file);
         }
 
-        // FUNÇÃO: VALIDAR VÍNCULO NO AVULSO
-        async function validarVinculoAvulso(mat) {
-            const cpfDigitado = document.getElementById('avulsoCpfResp').value;
-            const status = document.getElementById('statusAvulso');
-            const nomeInput = document.getElementById('avulsoNome');
-            
-            if(!cpfDigitado) { alert("Digite o CPF primeiro!"); document.getElementById('avulsoMatricula').value = ""; return; }
-            if(mat.length < 2) return;
-
-            const snap = await db.ref('alunos_db/' + mat).once('value');
-            if(snap.exists()) {
-                const d = snap.val();
-                if(cpfDigitado === d.cpf_pai || cpfDigitado === d.cpf_mae) {
-                    nomeInput.value = d.nome;
-                    status.innerText = "✅ VÍNCULO OK";
-                    status.className = "absolute right-3 top-3 text-[9px] font-black text-emerald-400";
-                } else {
-                    nomeInput.value = "";
-                    status.innerText = "❌ CONFLITO CPF";
-                    status.className = "absolute right-3 top-3 text-[9px] font-black text-red-400";
-                }
-            }
-        }
-
-        // SALVAR EVENTO
         function salvarEvento() {
-            const n = document.getElementById('nome').value;
-            const d = document.getElementById('data').value;
-            if(!n || !d) return alert("Preencha Nome e Data!");
+            const nome = document.getElementById('nome').value;
+            const data = document.getElementById('data').value;
+            if(!nome || !data) return alert("Nome e Data!");
             db.ref('eventos').push({
-                nome: n, data: d,
+                nome, data,
                 imagem: document.getElementById('imagem').value || 'https://placehold.co/600x400',
                 limit_ingressos: document.getElementById('limit').value || 1,
                 estoque_avulso: document.getElementById('estoqueAvulso').value || 0,
@@ -180,28 +135,9 @@
             }).then(() => alert("Evento Criado!"));
         }
 
-        // GERAR AVULSO
-        function gerarIngressoAvulso() {
-            const evNome = document.getElementById('avulsoEvento').options[document.getElementById('avulsoEvento').selectedIndex]?.text;
-            const nome = document.getElementById('avulsoNome').value;
-            if(!nome) return alert("Validação necessária!");
-            const id = `AV-${Date.now()}`;
-            db.ref('ingressos/' + id).set({
-                aluno: nome, matricula: document.getElementById('avulsoMatricula').value,
-                responsavel: "EMISSÃO AVULSA", evento: evNome, utilizado: false, data: new Date().toISOString()
-            }).then(() => { alert("Ingresso Emitido!"); location.reload(); });
-        }
-
-        // LISTAGEM E FILTRO
-        db.ref('eventos').on('value', snap => {
-            const sel = document.getElementById('avulsoEvento');
-            sel.innerHTML = '<option>Selecionar Evento...</option>';
-            snap.forEach(i => sel.innerHTML += `<option value="${i.key}">${i.val().nome}</option>`);
-        });
-
         db.ref('ingressos').on('value', snap => {
-            cacheIngressos = [];
-            snap.forEach(i => cacheIngressos.push({key: i.key, ...i.val()}));
+            ingressosCache = [];
+            snap.forEach(i => ingressosCache.push({key: i.key, ...i.val()}));
             renderizarTabela();
         });
 
@@ -209,13 +145,13 @@
             const tbody = document.getElementById('tabelaIngressos');
             const filtro = document.getElementById('filtroNome').value.toLowerCase();
             tbody.innerHTML = "";
-            cacheIngressos.forEach(ing => {
+            ingressosCache.forEach(ing => {
                 if(ing.aluno.toLowerCase().includes(filtro)) {
                     tbody.innerHTML += `
-                        <tr class="border-b border-slate-50 hover:bg-slate-50 transition">
-                            <td class="py-4 px-2">
+                        <tr class="border-b border-slate-50">
+                            <td class="py-4">
                                 <div class="font-black text-slate-700 uppercase text-[12px]">${ing.aluno}</div>
-                                <div class="text-[9px] text-slate-400 font-bold uppercase">Mat: ${ing.matricula}</div>
+                                <div class="text-[9px] text-slate-400 font-bold uppercase">Matrícula: ${ing.matricula}</div>
                             </td>
                             <td class="py-4 text-slate-500 text-[10px] font-bold uppercase">${ing.evento}</td>
                             <td class="py-4 text-center">
@@ -228,10 +164,6 @@
                 }
             });
         }
-
-        document.getElementById('csvFile').addEventListener('change', function() {
-            document.getElementById('fileName').innerText = this.files[0].name;
-        });
     </script>
 </body>
 </html>
