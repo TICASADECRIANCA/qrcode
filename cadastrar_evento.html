@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CASAQR - Gestão de Eventos</title>
+    <title>CASAQR - Gestão Avançada</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
@@ -12,10 +12,8 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; color: #1e293b; }
-        
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        
         .switch { position: relative; display: inline-block; width: 42px; height: 22px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 20px; }
@@ -29,21 +27,16 @@
     <nav class="bg-slate-900 text-white p-4 px-8 flex justify-between items-center shadow-2xl sticky top-0 z-50">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"></path>
-                </svg>
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" stroke-width="2.5"></path></svg>
             </div>
-            <div class="font-extrabold text-xl tracking-tighter uppercase">CASAQR <span class="text-blue-400 font-medium text-xs ml-1 italic">Admin</span></div>
+            <div class="font-extrabold text-xl tracking-tighter uppercase">CASAQR <span class="text-blue-400 font-medium text-xs ml-1">Admin</span></div>
         </div>
-        <div class="flex gap-4">
-            <button onclick="window.location.href='index.html'" class="text-xs font-bold uppercase text-slate-400 hover:text-white transition">Ir para Portal</button>
-            <button onclick="location.reload()" class="bg-blue-600 px-4 py-2 rounded-lg text-xs font-bold uppercase hover:bg-blue-700 transition">Atualizar</button>
-        </div>
+        <button onclick="location.reload()" class="bg-blue-600 px-4 py-2 rounded-lg text-xs font-bold uppercase hover:bg-blue-700 transition">Atualizar Dados</button>
     </nav>
 
     <div class="p-6 md:px-12 max-w-7xl mx-auto w-full grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
         <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
-            <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest">Total de Ingressos</p>
+            <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest">Total Geral</p>
             <h3 id="dash-total" class="text-4xl font-black text-slate-800">0</h3>
         </div>
         <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 border-l-4 border-l-amber-500">
@@ -60,7 +53,7 @@
         
         <div class="lg:col-span-4 space-y-6">
             <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200">
-                <h2 class="text-lg font-black text-slate-800 mb-6 uppercase tracking-tight">⚙️ Configurar Evento</h2>
+                <h2 class="text-lg font-black text-slate-800 mb-6 uppercase tracking-tight italic">⚙️ Configurar Evento</h2>
                 <div class="space-y-4">
                     <input type="text" id="nome" placeholder="Nome do Evento" class="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 ring-blue-500 font-bold">
                     <input type="text" id="data" placeholder="Data (Ex: 25 de Dezembro)" class="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 ring-blue-500 font-bold">
@@ -73,13 +66,19 @@
                 </div>
             </div>
 
-            <div class="bg-slate-900 p-8 rounded-[2.5rem] shadow-xl text-white">
+            <div class="bg-slate-900 p-8 rounded-[2.5rem] shadow-xl text-white border border-slate-800">
                 <h2 class="text-lg font-black mb-6 uppercase tracking-tight">🎟️ Emissão Avulsa</h2>
                 <div class="space-y-4">
                     <select id="avulsoEvento" class="w-full p-4 bg-slate-800 rounded-2xl border-none outline-none focus:ring-2 ring-blue-500 font-bold text-sm text-slate-300"></select>
-                    <input type="text" id="avulsoNome" placeholder="Nome Completo" class="w-full p-4 bg-slate-800 rounded-2xl border-none outline-none focus:ring-2 ring-blue-500 font-bold">
-                    <input type="text" id="avulsoCPF" placeholder="CPF ou Matrícula" class="w-full p-4 bg-slate-800 rounded-2xl border-none outline-none focus:ring-2 ring-blue-500 font-bold">
-                    <button onclick="gerarIngressoAvulso()" class="w-full bg-emerald-500 text-white py-4 rounded-2xl font-black shadow-lg hover:bg-emerald-600 transition transform active:scale-95">GERAR AGORA</button>
+                    
+                    <div class="relative">
+                        <input type="text" id="avulsoMatricula" oninput="consultarMatriculaAvulsa(this.value)" placeholder="Digite a Matrícula" class="w-full p-4 bg-slate-800 rounded-2xl border-none outline-none focus:ring-2 ring-blue-500 font-bold placeholder:text-slate-600">
+                        <div id="statusMatricula" class="absolute right-4 top-4 text-[10px] font-bold uppercase"></div>
+                    </div>
+
+                    <input type="text" id="avulsoNome" placeholder="Nome do Aluno (Auto)" readonly class="w-full p-4 bg-slate-800/50 rounded-2xl border-none outline-none font-bold text-blue-400 cursor-not-allowed">
+                    
+                    <button onclick="gerarIngressoAvulso()" class="w-full bg-emerald-500 text-white py-4 rounded-2xl font-black shadow-lg hover:bg-emerald-600 transition transform active:scale-95">EMITIR AGORA</button>
                 </div>
             </div>
         </div>
@@ -88,13 +87,18 @@
             <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-xl font-black text-slate-800">Eventos Ativos</h2>
-                    <span id="evCount" class="text-[10px] bg-slate-100 px-3 py-1 rounded-full font-bold text-slate-500 uppercase">0 eventos</span>
                 </div>
                 <div id="listaAdmin" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
             </div>
 
             <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
-                <h2 class="text-xl font-black text-slate-800 mb-6">Controle de Fluxo</h2>
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <h2 class="text-xl font-black text-slate-800">Controle de Fluxo</h2>
+                    <div class="relative w-full md:w-64">
+                        <input type="text" id="filtroNome" oninput="renderizarTabela()" placeholder="Filtrar por nome..." class="w-full p-3 pl-10 bg-slate-100 rounded-xl border-none outline-none focus:ring-2 ring-blue-500 font-semibold text-sm">
+                        <svg class="w-4 h-4 absolute left-3 top-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-width="2"></path></svg>
+                    </div>
+                </div>
                 <div class="overflow-x-auto custom-scrollbar">
                     <table class="w-full text-left">
                         <thead>
@@ -113,7 +117,6 @@
     </main>
 
     <script>
-        // CONFIGURAÇÃO FIREBASE
         const firebaseConfig = { 
             apiKey: "AIzaSyBFDlEOhuUerWjSfK_mPVxoj5sGbSDhe9k", 
             authDomain: "ingressoscdc-9ce88.firebaseapp.com", 
@@ -126,6 +129,27 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        let ingressosData = []; // Cache para o filtro funcionar rápido
+
+        // CONSULTA MATRÍCULA NO AVULSO
+        async function consultarMatriculaAvulsa(mat) {
+            const status = document.getElementById('statusMatricula');
+            const nomeInput = document.getElementById('avulsoNome');
+            if(mat.length < 2) { status.innerText = ""; nomeInput.value = ""; return; }
+            
+            status.innerText = "⏳";
+            const snap = await db.ref('alunos_db/' + mat).once('value');
+            if(snap.exists()) {
+                nomeInput.value = snap.val().nome;
+                status.innerText = "✅ OK";
+                status.className = "absolute right-4 top-4 text-[10px] font-bold uppercase text-emerald-400";
+            } else {
+                nomeInput.value = "";
+                status.innerText = "❌ N/A";
+                status.className = "absolute right-4 top-4 text-[10px] font-bold uppercase text-red-400";
+            }
+        }
+
         // SALVAR NOVO EVENTO
         function salvarEvento() {
             const nome = document.getElementById('nome').value;
@@ -134,7 +158,7 @@
             const limit = document.getElementById('limit').value || 1;
             const estoque = document.getElementById('estoqueAvulso').value || 0;
 
-            if(!nome || !data) return alert("Nome e Data são obrigatórios!");
+            if(!nome || !data) return alert("Preencha Nome e Data!");
 
             db.ref('eventos').push({
                 nome, data, 
@@ -142,34 +166,31 @@
                 limit_ingressos: limit,
                 estoque_avulso: estoque,
                 liberado: true
-            }).then(() => {
-                alert("Evento Criado!");
-                ['nome', 'data', 'imagem', 'limit', 'estoqueAvulso'].forEach(i => document.getElementById(i).value = "");
-            });
+            }).then(() => alert("Evento Criado!"));
         }
 
-        // GERAR AVULSO (SINCRONIZADO COM INDEX.HTML)
+        // GERAR AVULSO
         function gerarIngressoAvulso() {
             const evId = document.getElementById('avulsoEvento').value;
             const selectEl = document.getElementById('avulsoEvento');
             const evNome = selectEl.options[selectEl.selectedIndex].text;
             const nome = document.getElementById('avulsoNome').value;
-            const cpf = document.getElementById('avulsoCPF').value;
+            const mat = document.getElementById('avulsoMatricula').value;
 
-            if(!evId || !nome || !cpf) return alert("Preencha todos os campos!");
+            if(!evId || !nome) return alert("Matrícula válida necessária!");
 
-            const idUnico = `AVULSO-${Date.now()}`;
+            const idUnico = `AV-${mat}-${Date.now().toString().slice(-4)}`;
             db.ref('ingressos/' + idUnico).set({
-                aluno: nome, // Chave do index.html
-                matricula: cpf,
-                responsavel: "ADMIN (AVULSO)",
-                evento: evNome, // No index você salva o NOME do evento
-                utilizado: false, // Chave do index.html
+                aluno: nome,
+                matricula: mat,
+                responsavel: "EMISSÃO MANUAL",
+                evento: evNome,
+                utilizado: false,
                 data: new Date().toISOString()
             }).then(() => {
                 alert("Ingresso Gerado!");
+                document.getElementById('avulsoMatricula').value = "";
                 document.getElementById('avulsoNome').value = "";
-                document.getElementById('avulsoCPF').value = "";
             });
         }
 
@@ -178,82 +199,68 @@
             const container = document.getElementById('listaAdmin');
             const select = document.getElementById('avulsoEvento');
             container.innerHTML = "";
-            select.innerHTML = '<option value="">Selecionar Evento...</option>';
-
+            select.innerHTML = '<option value="">Evento...</option>';
             snap.forEach(item => {
                 const ev = item.val();
-                const key = item.key;
-                select.innerHTML += `<option value="${key}">${ev.nome}</option>`;
-
+                select.innerHTML += `<option value="${item.key}">${ev.nome}</option>`;
                 container.innerHTML += `
-                    <div class="bg-slate-50 rounded-[2rem] border border-slate-100 overflow-hidden flex flex-col group transition hover:shadow-lg">
+                    <div class="bg-slate-50 rounded-[2rem] border border-slate-100 overflow-hidden flex flex-col transition hover:shadow-lg">
                         <div class="h-24 bg-cover bg-center" style="background-image: url('${ev.imagem}')"></div>
                         <div class="p-5 flex-1">
-                            <div class="flex justify-between mb-1">
-                                <h4 class="font-black text-slate-800 text-xs uppercase truncate w-40">${ev.nome}</h4>
-                                <button onclick="db.ref('eventos/${key}').remove()" class="text-slate-300 hover:text-red-500">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2" stroke-linecap="round"></path></svg>
-                                </button>
-                            </div>
+                            <h4 class="font-black text-slate-800 text-xs uppercase truncate mb-1">${ev.nome}</h4>
                             <p class="text-[9px] text-blue-600 font-bold italic mb-4">${ev.data}</p>
-                            <div class="grid grid-cols-2 gap-2 mb-4">
-                                <div class="bg-white p-2 rounded-xl text-center shadow-sm">
-                                    <p class="text-[7px] text-slate-400 uppercase font-black">Lmt/Aluno</p>
-                                    <p class="font-bold text-blue-600 text-xs">${ev.limit_ingressos}</p>
-                                </div>
-                                <div class="bg-white p-2 rounded-xl text-center shadow-sm">
-                                    <p class="text-[7px] text-slate-400 uppercase font-black">Estoque</p>
-                                    <p class="font-bold text-emerald-600 text-xs">${ev.estoque_avulso}</p>
-                                </div>
-                            </div>
                             <div class="flex items-center justify-between pt-2 border-t border-slate-200">
-                                <span class="text-[9px] font-black ${ev.liberado ? 'text-blue-600' : 'text-slate-300'}">${ev.liberado ? 'ATIVO' : 'PAUSADO'}</span>
-                                <label class="switch">
-                                    <input type="checkbox" ${ev.liberado ? 'checked' : ''} onchange="db.ref('eventos/${key}').update({liberado: !${ev.liberado}})">
-                                    <span class="slider"></span>
-                                </label>
+                                <label class="switch"><input type="checkbox" ${ev.liberado ? 'checked' : ''} onchange="db.ref('eventos/${item.key}').update({liberado: !${ev.liberado}})"> <span class="slider"></span></label>
+                                <button onclick="db.ref('eventos/${item.key}').remove()" class="text-slate-300 hover:text-red-500 text-[10px] font-bold">EXCLUIR</button>
                             </div>
                         </div>
                     </div>`;
             });
-            document.getElementById('evCount').innerText = `${snap.numChildren()} eventos`;
         });
 
-        // MONITORAR INGRESSOS (TABELA SINCRONIZADA)
+        // MONITORAR INGRESSOS
         db.ref('ingressos').on('value', snap => {
+            ingressosData = [];
+            snap.forEach(item => {
+                ingressosData.push({ key: item.key, ...item.val() });
+            });
+            renderizarTabela();
+        });
+
+        // RENDERIZAR TABELA COM FILTRO
+        function renderizarTabela() {
             const tabela = document.getElementById('tabelaIngressos');
+            const filtro = document.getElementById('filtroNome').value.toLowerCase();
             tabela.innerHTML = "";
+            
             let tTotal = 0, tPendentes = 0, tValidados = 0;
 
-            snap.forEach(item => {
-                const ing = item.val();
-                tTotal++;
-                ing.utilizado ? tValidados++ : tPendentes++;
+            ingressosData.forEach(ing => {
+                if(ing.aluno.toLowerCase().includes(filtro)) {
+                    tTotal++;
+                    ing.utilizado ? tValidados++ : tPendentes++;
 
-                tabela.innerHTML += `
-                    <tr class="border-b border-slate-50 hover:bg-slate-50 transition">
-                        <td class="py-4 px-2">
-                            <div class="font-black text-slate-700 uppercase text-[12px]">${ing.aluno || "SEM NOME"}</div>
-                            <div class="text-[9px] text-slate-400 font-bold uppercase">Resp: ${ing.responsavel || "---"}</div>
-                        </td>
-                        <td class="py-4 text-slate-500 text-[10px] font-bold uppercase">${ing.evento || 'Indefinido'}</td>
-                        <td class="py-4 text-center">
-                            <span class="px-3 py-1 rounded-full text-[9px] font-black ${ing.utilizado ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}">
-                                ${ing.utilizado ? 'VALIDADO' : 'PENDENTE'}
-                            </span>
-                        </td>
-                        <td class="py-4 text-right">
-                            <button onclick="db.ref('ingressos/${item.key}').remove()" class="text-slate-300 hover:text-red-500 p-2">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2" stroke-linecap="round"></path></svg>
-                            </button>
-                        </td>
-                    </tr>`;
+                    tabela.innerHTML += `
+                        <tr class="border-b border-slate-50 hover:bg-slate-50 transition">
+                            <td class="py-4 px-2">
+                                <div class="font-black text-slate-700 uppercase text-[12px]">${ing.aluno}</div>
+                                <div class="text-[9px] text-slate-400 font-bold uppercase">Mat: ${ing.matricula}</div>
+                            </td>
+                            <td class="py-4 text-slate-500 text-[10px] font-bold uppercase">${ing.evento}</td>
+                            <td class="py-4 text-center">
+                                <span class="px-3 py-1 rounded-full text-[9px] font-black ${ing.utilizado ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}">${ing.utilizado ? 'VALIDADO' : 'PENDENTE'}</span>
+                            </td>
+                            <td class="py-4 text-right">
+                                <button onclick="db.ref('ingressos/${ing.key}').remove()" class="text-slate-300 hover:text-red-500">Excluir</button>
+                            </td>
+                        </tr>`;
+                }
             });
 
             document.getElementById('dash-total').innerText = tTotal;
             document.getElementById('dash-pendentes').innerText = tPendentes;
             document.getElementById('dash-validados').innerText = tValidados;
-        });
+        }
     </script>
 </body>
 </html>
