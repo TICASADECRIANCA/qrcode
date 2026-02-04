@@ -3,87 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CASAQR - Painel Administrativo</title>
+    <title>CASAQR - Admin Pro</title>
     
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z'></path></svg>">
-
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; }
-        
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        
-        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
         .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: #2563eb; }
         input:checked + .slider:before { transform: translateX(20px); }
     </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="min-h-screen">
 
-    <nav class="bg-slate-900 text-white p-4 px-6 md:px-12 flex justify-between items-center shadow-xl sticky top-0 z-50">
+    <nav class="bg-slate-900 text-white p-4 px-6 md:px-12 flex justify-between items-center sticky top-0 z-50">
         <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                </svg>
+            <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
             </div>
-            <div class="font-extrabold text-xl tracking-tighter uppercase">CASAQR <span class="text-blue-400 font-medium text-xs ml-1">Admin</span></div>
+            <div class="font-bold text-xl uppercase tracking-tighter">CASAQR <span class="text-blue-400 font-light">Admin</span></div>
         </div>
-        <div class="flex gap-4">
-            <a href="index.html" class="text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition">Ver Portal</a>
-            <button onclick="logout()" class="text-xs font-bold uppercase tracking-widest text-red-400">Sair</button>
-        </div>
+        <button onclick="logout()" class="text-xs font-bold text-red-400 uppercase tracking-widest">Sair</button>
     </nav>
 
-    <main class="p-6 md:p-12 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        <div class="lg:col-span-1 space-y-6">
-            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200">
-                <h2 class="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">
-                    <span class="w-2 h-6 bg-blue-600 rounded-full"></span> Novo Evento
-                </h2>
-                
-                <div class="space-y-4">
-                    <input type="text" id="nome" placeholder="Nome do Evento" class="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 ring-blue-500 outline-none font-semibold">
-                    <input type="text" id="data" placeholder="Data (ex: 20 de Outubro)" class="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 ring-blue-500 outline-none font-semibold">
-                    <input type="text" id="imagem" placeholder="URL da Imagem de Capa" class="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 ring-blue-500 outline-none font-semibold">
-                    
-                    <div class="pt-4 border-t border-slate-100">
-                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Configurações de Ingressos</label>
-                        <input type="number" id="limit" placeholder="Qtd de ingressos por aluno" class="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 ring-blue-500 outline-none font-semibold mb-3">
-                        <input type="text" id="contato" placeholder="WhatsApp p/ Venda (Opcional)" class="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 ring-blue-500 outline-none font-semibold">
-                    </div>
+    <header class="p-6 md:px-12 max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+            <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">Total de Ingressos</p>
+            <h3 id="dash-total" class="text-3xl font-black text-slate-800">0</h3>
+        </div>
+        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+            <p class="text-blue-600 text-xs font-bold uppercase tracking-wider">Emitidos (Alunos)</p>
+            <h3 id="dash-emitidos" class="text-3xl font-black text-slate-800">0</h3>
+        </div>
+        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+            <p class="text-emerald-500 text-xs font-bold uppercase tracking-wider">Validados (Check-in)</p>
+            <h3 id="dash-validados" class="text-3xl font-black text-slate-800">0</h3>
+        </div>
+    </header>
 
-                    <button onclick="salvarEvento()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg shadow-blue-200 hover:bg-blue-700 transition transform active:scale-95 mt-4">
-                        CRIAR EVENTO AGORA
-                    </button>
+    <main class="p-6 md:px-12 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <div class="lg:col-span-4 space-y-6">
+            <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
+                <h2 class="text-lg font-bold text-slate-800 mb-4">Novo Evento</h2>
+                <div class="space-y-3">
+                    <input type="text" id="nome" placeholder="Nome do Evento" class="w-full p-3 bg-slate-50 rounded-xl border-none outline-none focus:ring-2 ring-blue-500">
+                    <input type="text" id="data" placeholder="Data do Evento" class="w-full p-3 bg-slate-50 rounded-xl border-none outline-none focus:ring-2 ring-blue-500">
+                    <button onclick="salvarEvento()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition">Criar Evento</button>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
+                <h2 class="text-lg font-bold text-slate-800 mb-2">Importar Alunos</h2>
+                <p class="text-xs text-slate-400 mb-4">Selecione um arquivo .csv (Nome, CPF)</p>
+                <input type="file" id="fileCSV" accept=".csv" class="hidden">
+                <button onclick="document.getElementById('fileCSV').click()" class="w-full border-2 border-dashed border-slate-200 text-slate-500 py-4 rounded-xl font-bold hover:bg-slate-50 transition mb-3">
+                    Selecionar Arquivo
+                </button>
+                <button onclick="importarLista()" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold">Processar Lista</button>
+            </div>
+
+            <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
+                <h2 class="text-lg font-bold text-slate-800 mb-4">Ingresso Avulso</h2>
+                <div class="space-y-3">
+                    <input type="text" id="avulsoNome" placeholder="Nome Completo" class="w-full p-3 bg-slate-50 rounded-xl border-none outline-none focus:ring-2 ring-blue-500">
+                    <input type="text" id="avulsoCPF" placeholder="CPF (Apenas números)" class="w-full p-3 bg-slate-50 rounded-xl border-none outline-none focus:ring-2 ring-blue-500">
+                    <select id="avulsoEvento" class="w-full p-3 bg-slate-50 rounded-xl border-none outline-none focus:ring-2 ring-blue-500 font-semibold text-slate-600">
+                        <option value="">Selecione o Evento</option>
+                    </select>
+                    <button onclick="gerarIngressoAvulso()" class="w-full bg-emerald-500 text-white py-3 rounded-xl font-bold shadow-lg hover:bg-emerald-600 transition">Gerar e Validar</button>
                 </div>
             </div>
         </div>
 
-        <div class="lg:col-span-2 space-y-6">
-            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200 min-h-[500px]">
+        <div class="lg:col-span-8 space-y-6">
+            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200">
                 <h2 class="text-xl font-black text-slate-800 mb-6 flex justify-between items-center">
-                    Gerenciar Eventos
-                    <span id="count" class="bg-slate-100 text-slate-500 text-xs px-3 py-1 rounded-full">0 cadastrados</span>
+                    Eventos Ativos
+                    <span id="count" class="bg-slate-100 text-slate-500 text-xs px-3 py-1 rounded-full italic">0 eventos</span>
                 </h2>
+                <div id="listaAdmin" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </div>
 
-                <div id="listaAdmin" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    </div>
+            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
+                <h2 class="text-xl font-black text-slate-800 mb-6">Controle de Ingressos</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                                <th class="pb-4">Aluno</th>
+                                <th class="pb-4">Evento</th>
+                                <th class="pb-4 text-center">Status</th>
+                                <th class="pb-4 text-right">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaIngressos" class="text-sm">
+                            </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </main>
 
     <script>
+        // Configuração Firebase (Sua configuração original)
         const firebaseConfig = { 
             apiKey: "AIzaSyBFDlEOhuUerWjSfK_mPVxoj5sGbSDhe9k", 
             authDomain: "ingressoscdc-9ce88.firebaseapp.com", 
@@ -96,79 +125,123 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        // 1. Criar Evento
         function salvarEvento() {
             const nome = document.getElementById('nome').value;
             const data = document.getElementById('data').value;
-            const imagem = document.getElementById('imagem').value;
-            const limit = document.getElementById('limit').value || 1;
-            const contato = document.getElementById('contato').value;
-
-            if(!nome || !data) return alert("Nome e Data são obrigatórios!");
+            if(!nome || !data) return alert("Preencha os campos!");
 
             db.ref('eventos').push({
-                nome, data, imagem, 
-                limit_ingressos: limit, 
-                contato: contato || "",
-                liberado: true, // Começa aberto por padrão
+                nome, data,
+                liberado: true,
                 criadoEm: new Date().toISOString()
             }).then(() => {
-                alert("Evento criado com sucesso!");
-                location.reload();
+                document.getElementById('nome').value = "";
+                document.getElementById('data').value = "";
             });
         }
 
-        function toggleStatus(key, statusAtual) {
-            db.ref('eventos/' + key).update({ liberado: !statusAtual });
+        // 2. Importar Lista de Alunos (Simulação de lógica CSV)
+        function importarLista() {
+            alert("Módulo de processamento iniciado. Selecione o arquivo CSV com colunas 'NOME, CPF'.");
+            // Aqui você integraria um parser de CSV como o PapaParse
         }
 
-        function excluirEvento(key) {
-            if(confirm("Tem certeza que deseja excluir este evento permanentemente?")) {
-                db.ref('eventos/' + key).remove();
-            }
+        // 3. Gerar Ingresso Avulso
+        function gerarIngressoAvulso() {
+            const nome = document.getElementById('avulsoNome').value;
+            const cpf = document.getElementById('avulsoCPF').value;
+            const eventoId = document.getElementById('avulsoEvento').value;
+
+            if(!nome || !cpf || !eventoId) return alert("Preencha todos os campos do avulso!");
+
+            db.ref('ingressos').push({
+                alunoNome: nome,
+                alunoCPF: cpf,
+                eventoId: eventoId,
+                validado: false,
+                dataEmissao: new Date().toISOString()
+            }).then(() => {
+                alert("Ingresso gerado com sucesso!");
+                document.getElementById('avulsoNome').value = "";
+                document.getElementById('avulsoCPF').value = "";
+            });
         }
 
-        // Monitorar Eventos
+        // 4. Carregar Eventos no Select e na Lista
         db.ref('eventos').on('value', snap => {
             const cont = document.getElementById('listaAdmin');
-            const countLabel = document.getElementById('count');
+            const selectAvulso = document.getElementById('avulsoEvento');
             cont.innerHTML = "";
-            let i = 0;
+            selectAvulso.innerHTML = '<option value="">Selecione o Evento</option>';
 
             snap.forEach(item => {
                 const ev = item.val();
                 const key = item.key;
-                i++;
+                
+                // Popula Select
+                selectAvulso.innerHTML += `<option value="${key}">${ev.nome}</option>`;
 
+                // Popula Grid
                 cont.innerHTML += `
-                    <div class="bg-slate-50 p-5 rounded-[1.5rem] border border-slate-100 flex flex-col justify-between group">
-                        <div class="flex justify-between items-start mb-4">
-                            <div class="w-12 h-12 bg-cover bg-center rounded-xl shadow-sm" style="background-image: url('${ev.imagem || 'https://placehold.co/100'}')"></div>
-                            <div class="flex gap-2">
-                                <button onclick="excluirEvento('${key}')" class="text-slate-300 hover:text-red-500 transition">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <h4 class="font-bold text-slate-800 leading-tight mb-1 uppercase text-sm">${ev.nome}</h4>
-                            <p class="text-[10px] text-slate-400 font-bold mb-4 italic">${ev.data}</p>
-                        </div>
-
-                        <div class="flex items-center justify-between bg-white p-3 rounded-2xl shadow-sm">
-                            <span class="text-[10px] font-black tracking-widest ${ev.liberado ? 'text-blue-600' : 'text-slate-400'}">
-                                ${ev.liberado ? '● ABERTO' : '○ FECHADO'}
-                            </span>
-                            <label class="switch">
-                                <input type="checkbox" ${ev.liberado ? 'checked' : ''} onchange="toggleStatus('${key}', ${ev.liberado})">
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        <h4 class="font-bold text-slate-800 text-sm uppercase">${ev.nome}</h4>
+                        <p class="text-[10px] text-slate-400 mb-3">${ev.data}</p>
+                        <div class="flex items-center justify-between">
+                             <label class="switch">
+                                <input type="checkbox" ${ev.liberado ? 'checked' : ''} onchange="db.ref('eventos/${key}').update({liberado: !${ev.liberado}})">
                                 <span class="slider"></span>
                             </label>
+                            <button onclick="db.ref('eventos/${key}').remove()" class="text-red-400 hover:text-red-600 transition">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                            </button>
                         </div>
                     </div>
                 `;
             });
-            countLabel.innerText = `${i} cadastrados`;
+            document.getElementById('count').innerText = `${snap.numChildren()} eventos`;
         });
+
+        // 5. Monitorar Ingressos e Dashboard
+        db.ref('ingressos').on('value', snap => {
+            const tabela = document.getElementById('tabelaIngressos');
+            const dashTotal = document.getElementById('dash-total');
+            const dashValidados = document.getElementById('dash-validados');
+            const dashEmitidos = document.getElementById('dash-emitidos');
+
+            tabela.innerHTML = "";
+            let total = 0;
+            let validados = 0;
+
+            snap.forEach(item => {
+                const ing = item.val();
+                total++;
+                if(ing.validado) validados++;
+
+                tabela.innerHTML += `
+                    <tr class="border-b border-slate-50 group hover:bg-slate-50 transition">
+                        <td class="py-4 font-bold text-slate-700">${ing.alunoNome}</td>
+                        <td class="py-4 text-slate-500 text-xs italic">Evento Ref.</td>
+                        <td class="py-4 text-center">
+                            <span class="px-2 py-1 rounded-md text-[9px] font-black ${ing.validado ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}">
+                                ${ing.validado ? 'VALIDADO' : 'PENDENTE'}
+                            </span>
+                        </td>
+                        <td class="py-4 text-right">
+                            <button onclick="db.ref('ingressos/${item.key}').remove()" class="text-slate-300 hover:text-red-500">Excluir</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            dashTotal.innerText = total;
+            dashEmitidos.innerText = total; // Ajustar conforme lógica de "alunos importados"
+            dashValidados.innerText = validados;
+        });
+
+        function logout() {
+            alert("Saindo do sistema...");
+        }
     </script>
 </body>
 </html>
