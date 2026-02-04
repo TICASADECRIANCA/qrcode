@@ -5,76 +5,64 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CASAQR - Portal de Ingressos</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; }
-        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; overflow-x: hidden; }
+        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); }
+        .card-event { transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .card-event:hover { transform: translateY(-12px); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1); }
     </style>
 </head>
 <body class="pb-12">
 
     <div id="overlay" class="hidden fixed inset-0 bg-white/95 z-[100] flex flex-col items-center justify-center p-4">
-        <div id="loader" class="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-6"></div>
-        <div id="successIcon" class="hidden text-6xl mb-4">✅</div>
-        <h3 id="statusMsg" class="text-2xl font-black text-slate-800 text-center italic">Processando Pedido...</h3>
+        <div id="loader" class="w-20 h-20 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-6"></div>
+        <div id="successIcon" class="hidden animate__animated animate__bounceIn text-7xl mb-4">✅</div>
+        <h3 id="statusMsg" class="text-2xl font-black text-slate-800 italic uppercase">Gerando Ingressos...</h3>
     </div>
 
-    <nav class="glass p-5 shadow-sm border-b border-slate-100 mb-8 sticky top-0 z-40">
+    <nav class="glass p-5 shadow-sm border-b border-slate-100 sticky top-0 z-40 animate__animated animate__fadeInDown">
         <div class="max-w-7xl mx-auto flex justify-between items-center px-4">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" stroke-width="2.5"></path>
-                    </svg>
+                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg animate__animated animate__rotateIn">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" stroke-width="2.5"></path></svg>
                 </div>
-                <div class="font-extrabold text-2xl tracking-tighter uppercase italic">
-                    CASA<span class="text-blue-600">QR</span>
-                </div>
+                <div class="font-extrabold text-2xl tracking-tighter uppercase italic">CASA<span class="text-blue-600">QR</span></div>
             </div>
-            <span class="hidden md:block text-[10px] font-black uppercase text-slate-400 tracking-widest border border-slate-200 px-4 py-2 rounded-full">Sistema de Acesso Escolar</span>
         </div>
     </nav>
 
-    <div id="listaEventos" class="p-8 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto"></div>
+    <div id="listaEventos" class="p-8 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto animate__animated animate__fadeInUp"></div>
 
     <div id="modalIngresso" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-[2.5rem] p-8 max-w-lg w-full shadow-2xl overflow-y-auto max-h-[90vh]">
+        <div id="modalContent" class="bg-white rounded-[2.5rem] p-8 max-w-lg w-full shadow-2xl overflow-y-auto max-h-[90vh] animate__animated">
             <div class="flex justify-between items-start mb-6">
-                <div>
-                    <p class="text-[10px] font-black text-blue-600 uppercase tracking-widest">Resgate de Convite</p>
-                    <h3 id="nomeEvTitle" class="text-2xl font-black uppercase text-slate-800 italic leading-tight">Evento</h3>
-                </div>
-                <button onclick="document.getElementById('modalIngresso').classList.add('hidden')" class="text-slate-300 hover:text-red-500">
+                <h3 id="nomeEvTitle" class="text-2xl font-black uppercase text-slate-800 italic">Evento</h3>
+                <button onclick="fecharModal()" class="text-slate-300 hover:text-red-500 transition-colors">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="3"></path></svg>
                 </button>
             </div>
             
-            <div class="space-y-5">
+            <div class="space-y-4">
                 <div>
-                    <label class="text-[10px] font-black ml-4 text-slate-400 uppercase">CPF do Responsável (Apenas Números)</label>
-                    <input type="number" id="cpfResponsavel" placeholder="Ex: 12345678901" 
-                           class="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 ring-blue-500 font-black text-lg transition-all">
-                    
+                    <label class="text-[10px] font-black ml-4 text-slate-400 uppercase tracking-widest">Seu CPF (Responsável)</label>
+                    <input type="number" id="cpfResponsavel" placeholder="000.000.000-00" class="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 ring-blue-500 font-black text-lg transition-all">
                     <input type="text" id="nomeResponsavelAuto" placeholder="Responsável não identificado" readonly 
-                           class="w-full mt-2 p-3 bg-blue-50/50 rounded-xl text-[11px] font-black text-blue-700 border-none outline-none italic cursor-not-allowed">
+                           class="w-full mt-2 p-3 bg-blue-50 rounded-xl text-[11px] font-black text-blue-700 border-none outline-none italic">
                 </div>
                 
-                <div id="filhos" class="space-y-3 pt-4 border-t border-slate-100"></div>
+                <div id="filhos" class="space-y-3 pt-2"></div>
 
-                <button onclick="addFilho()" class="flex items-center justify-center gap-2 text-blue-600 font-black text-[10px] w-full py-2 uppercase hover:bg-blue-50 rounded-xl transition">
-                    <span>+ Adicionar outro filho</span>
-                </button>
+                <button onclick="addFilho()" class="text-blue-600 font-black text-[10px] w-full py-2 uppercase hover:tracking-widest transition-all">+ Adicionar outro filho</button>
                 
-                <div class="pt-4 space-y-3">
-                    <button onclick="processar()" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-black shadow-xl shadow-blue-200 hover:bg-blue-700 hover:-translate-y-1 transition-all uppercase italic tracking-tighter text-lg">
-                        Gerar Ingressos em PDF
-                    </button>
-                    <p class="text-[9px] text-center text-slate-400 font-bold uppercase">Ao emitir, seu ingresso será baixado automaticamente.</p>
-                </div>
+                <button onclick="processar()" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-black shadow-xl hover:bg-blue-700 transition-all uppercase italic text-lg tracking-tighter">
+                    Gerar Ingressos (PDF)
+                </button>
             </div>
         </div>
     </div>
@@ -100,67 +88,69 @@
             snap.forEach(i => {
                 const ev = i.val(); if(!ev.liberado) return;
                 cont.innerHTML += `
-                <div class="bg-white rounded-[2.5rem] p-4 shadow-sm border border-slate-100 relative group transition-all hover:shadow-2xl hover:-translate-y-2">
-                    <div class="h-56 rounded-[2rem] bg-cover bg-center mb-6 shadow-inner" style="background-image: url('${ev.imagem}')"></div>
+                <div class="card-event bg-white rounded-[2.5rem] p-4 shadow-sm border border-slate-100">
+                    <div class="h-56 rounded-[2rem] bg-cover bg-center mb-6" style="background-image: url('${ev.imagem}')"></div>
                     <div class="px-2 pb-2">
-                        <div class="flex justify-between items-center mb-2">
-                           <p class="text-[10px] font-black text-blue-600 uppercase tracking-widest">${ev.data}</p>
-                           <span class="text-[9px] font-black bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-md uppercase">Disponível</span>
-                        </div>
+                        <p class="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">${ev.data}</p>
                         <h3 class="text-xl font-black text-slate-800 leading-tight mb-6 h-14 overflow-hidden uppercase italic">${ev.nome}</h3>
-                        <button onclick="openM('${i.key}')" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black hover:bg-blue-600 transition shadow-lg">OBTER MEU ACESSO</button>
+                        <button onclick="abrirModal('${i.key}')" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black hover:bg-blue-600 transition shadow-lg">RESGATAR</button>
                     </div>
                 </div>`;
             });
         });
 
-        async function openM(key) {
+        async function abrirModal(key) {
             const snap = await db.ref('eventos/'+key).once('value');
             currentEv = snap.val();
             document.getElementById('nomeEvTitle').innerText = currentEv.nome;
             document.getElementById('filhos').innerHTML = "";
             addFilho();
-            document.getElementById('modalIngresso').classList.remove('hidden');
+            const modal = document.getElementById('modalIngresso');
+            const content = document.getElementById('modalContent');
+            modal.classList.remove('hidden');
+            content.classList.add('animate__zoomIn');
+        }
+
+        function fecharModal() {
+            const modal = document.getElementById('modalIngresso');
+            const content = document.getElementById('modalContent');
+            content.classList.replace('animate__zoomIn', 'animate__zoomOut');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                content.classList.remove('animate__zoomOut');
+            }, 300);
         }
 
         async function verificarMatricula(inputMat) {
             const mat = inputMat.value;
-            const cpfDigitado = document.getElementById('cpfResponsavel').value.trim().replace(/\D/g, "");
+            const cpf = document.getElementById('cpfResponsavel').value.trim().replace(/\D/g, "");
             const campoNomeAlu = inputMat.previousElementSibling; 
             const campoRespAuto = document.getElementById('nomeResponsavelAuto');
             
-            if(!cpfDigitado || cpfDigitado.length < 11) {
-                alert("⚠️ Digite o CPF primeiro para validar a matrícula!");
-                inputMat.value = ""; return;
-            }
+            if(cpf.length < 11) { alert("Digite o CPF primeiro!"); inputMat.value = ""; return; }
 
             const snap = await db.ref('alunos_db/' + mat).once('value');
             if(snap.exists()) {
                 const d = snap.val();
-                if(cpfDigitado === d.cpf_pai) {
+                if(cpf === d.cpf_pai) {
                     campoNomeAlu.value = d.nome + " [" + d.turma + "]";
-                    campoRespAuto.value = "Identificado: " + d.nome_pai;
-                } else if(cpfDigitado === d.cpf_mae) {
+                    campoRespAuto.value = "Responsável: " + d.nome_pai;
+                } else if(cpf === d.cpf_mae) {
                     campoNomeAlu.value = d.nome + " [" + d.turma + "]";
-                    campoRespAuto.value = "Identificado: " + d.nome_mae;
+                    campoRespAuto.value = "Responsável: " + d.nome_mae;
                 } else {
-                    alert("❌ O CPF informado não consta como responsável deste aluno.");
-                    inputMat.value = ""; campoNomeAlu.value = "";
+                    alert("CPF não autorizado para esta matrícula.");
+                    inputMat.value = "";
                 }
-            } else {
-                alert("❌ Matrícula inválida.");
-                inputMat.value = "";
-            }
+            } else { alert("Matrícula não encontrada."); inputMat.value = ""; }
         }
 
         function addFilho() {
             const div = document.createElement('div');
-            div.className = "p-5 bg-slate-50 rounded-[1.5rem] border border-slate-100 transition-all focus-within:ring-2 ring-blue-100";
+            div.className = "p-5 bg-slate-50 rounded-[1.5rem] border border-slate-100 animate__animated animate__fadeInLeft animate__faster";
             div.innerHTML = `
                 <input type="text" placeholder="Nome do Aluno..." readonly class="n-aluno w-full bg-transparent font-black outline-none text-blue-700 text-[12px] mb-2 cursor-not-allowed italic uppercase">
-                <div class="relative">
-                    <input type="number" placeholder="Digite a Matrícula" class="m-aluno w-full bg-white p-3 rounded-xl border border-slate-200 text-sm outline-none font-bold focus:border-blue-400" onchange="verificarMatricula(this)">
-                </div>
+                <input type="number" placeholder="Digite a Matrícula" class="m-aluno w-full bg-white p-3 rounded-xl border border-slate-200 text-sm outline-none font-bold" onchange="verificarMatricula(this)">
             `;
             document.getElementById('filhos').appendChild(div);
         }
@@ -168,9 +158,9 @@
         async function processar() {
             const nomes = document.querySelectorAll('.n-aluno');
             const mats = document.querySelectorAll('.m-aluno');
-            if(nomes[0].value === "") return alert("Preencha e valide ao menos uma matrícula!");
+            if(!nomes[0].value) return alert("Valide ao menos um aluno!");
 
-            document.getElementById('modalIngresso').classList.add('hidden');
+            fecharModal();
             document.getElementById('overlay').classList.remove('hidden');
 
             try {
@@ -183,36 +173,28 @@
                     const idUnico = `${m}-${Date.now().toString().slice(-4)}`;
                     if(i > 0) doc.addPage();
                     
-                    // Header Azul
                     doc.setFillColor(30, 64, 175); doc.roundedRect(10, 10, 190, 50, 5, 5, 'F');
-                    doc.setTextColor(255, 255, 255); doc.setFontSize(24); doc.text("CONVITE INDIVIDUAL", 105, 32, {align: 'center'});
+                    doc.setTextColor(255, 255, 255); doc.setFontSize(22); doc.text("CONVITE INDIVIDUAL", 105, 30, {align: 'center'});
                     doc.setFontSize(14); doc.text(currentEv.nome.toUpperCase(), 105, 45, {align: 'center'});
                     
-                    // Corpo
-                    doc.setTextColor(30, 41, 59); doc.setFontSize(10); doc.text("ALUNO(A):", 20, 85);
-                    doc.setFontSize(18); doc.text(n.toUpperCase(), 20, 95);
-                    doc.setFontSize(10); doc.text("DATA DO EVENTO:", 20, 115);
-                    doc.setFontSize(14); doc.text(currentEv.data, 20, 125);
+                    doc.setTextColor(30, 41, 59); doc.setFontSize(18); doc.text(n, 20, 90);
+                    doc.setFontSize(12); doc.text("DATA: " + currentEv.data, 20, 105);
 
-                    // QR Code
                     const qrDiv = document.getElementById('qrcode-temp'); qrDiv.innerHTML = "";
                     new QRCode(qrDiv, { text: idUnico, width: 256, height: 256 });
-                    await new Promise(r => setTimeout(r, 250));
-                    doc.addImage(qrDiv.querySelector('canvas').toDataURL("image/png"), 'PNG', 140, 80, 50, 50);
-                    
-                    // Footer
-                    doc.setFontSize(8); doc.setTextColor(150); doc.text("Valide este QR Code na portaria do evento.", 105, 150, {align: 'center'});
+                    await new Promise(r => setTimeout(r, 300));
+                    doc.addImage(qrDiv.querySelector('canvas').toDataURL("image/png"), 'PNG', 140, 75, 45, 45);
 
                     await db.ref('ingressos/' + idUnico).set({ 
                         aluno: n, matricula: m, evento: currentEv.nome, utilizado: false, data: new Date().toISOString() 
                     });
                 }
-                doc.save(`Ingresso_${currentEv.nome}.pdf`);
+                doc.save(`CASAQR_${currentEv.nome}.pdf`);
                 document.getElementById('loader').classList.add('hidden');
                 document.getElementById('successIcon').classList.remove('hidden');
                 document.getElementById('statusMsg').innerText = "Download concluído!";
-                setTimeout(() => location.reload(), 3000);
-            } catch(e) { alert("Erro crítico: " + e.message); location.reload(); }
+                setTimeout(() => location.reload(), 2500);
+            } catch(e) { alert("Erro: " + e.message); location.reload(); }
         }
     </script>
 </body>
