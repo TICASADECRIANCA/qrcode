@@ -55,7 +55,6 @@
     <main class="p-6 md:px-12 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         <div class="lg:col-span-4 space-y-6">
-            
             <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
                 <h2 class="text-xs font-black text-slate-800 mb-2 uppercase italic">📊 Banco de Dados</h2>
                 <p class="text-[9px] text-slate-400 mb-4 font-bold uppercase">Formato: mat, nome, turma, cpfP, nomeP, cpfM, nomeM</p>
@@ -84,7 +83,7 @@
                 <h2 class="text-xs font-black mb-4 uppercase italic">🎟️ Emissão Manual</h2>
                 <div class="space-y-3">
                     <select id="avulsoEvento" class="w-full p-3 bg-slate-800 rounded-xl outline-none border-none font-bold text-xs text-slate-300"></select>
-                    <input type="number" id="avulsoMat" placeholder="Matrícula do Aluno" class="w-full p-3 bg-slate-800 rounded-xl outline-none font-bold text-sm text-white">
+                    <input type="number" id="avulsoMat" oninput="vincularDadosAluno(this.value)" placeholder="Matrícula do Aluno" class="w-full p-3 bg-slate-800 rounded-xl outline-none font-bold text-sm text-white">
                     <input type="text" id="avulsoNome" placeholder="Nome do Aluno" class="w-full p-3 bg-slate-800 rounded-xl outline-none font-bold text-sm text-white">
                     <button onclick="gerarAvulso()" class="w-full bg-emerald-500 text-white py-3 rounded-xl font-black shadow-lg hover:bg-emerald-600 transition uppercase text-[10px]">Gerar no Banco</button>
                 </div>
@@ -92,7 +91,6 @@
         </div>
 
         <div class="lg:col-span-8 space-y-6">
-            
             <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200">
                 <h2 class="text-sm font-black text-slate-800 mb-4 uppercase italic">Eventos em Andamento</h2>
                 <div id="listaAdmin" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
@@ -134,7 +132,7 @@
         const db = firebase.database();
         let ingressosCache = [];
 
-        // 1. Importar CSV com 7 colunas
+        // 1. Importar CSV (Mantido original)
         function importarCSV() {
             const file = document.getElementById('csvFile').files[0];
             if (!file) return alert("Selecione o arquivo!");
@@ -159,7 +157,18 @@
             reader.readAsText(file);
         }
 
-        // 2. Salvar Evento
+        // NOVO: Função para preencher nome automaticamente ao digitar matrícula
+        function vincularDadosAluno(mat) {
+            if (mat.length < 2) return;
+            db.ref('alunos_db/' + mat).once('value', snap => {
+                const dados = snap.val();
+                if (dados) {
+                    document.getElementById('avulsoNome').value = dados.nome;
+                }
+            });
+        }
+
+        // 2. Salvar Evento (Mantido original)
         function salvarEvento() {
             const n = document.getElementById('nome').value;
             const d = document.getElementById('data').value;
@@ -173,20 +182,44 @@
             }).then(() => { alert("Evento Publicado!"); location.reload(); });
         }
 
-        // 3. Emissão Manual (Avulsa)
+        // 3. Emissão Manual (CORRIGIDO: Gera múltiplos e vincula)
         function gerarAvulso() {
-            const ev = document.getElementById('avulsoEvento').options[document.getElementById('avulsoEvento').selectedIndex]?.text;
+            const select = document.getElementById('avulsoEvento');
+            const eventoId = select.value;
+            const evNome = select.options[select.selectedIndex]?.text;
             const nome = document.getElementById('avulsoNome').value;
             const mat = document.getElementById('avulsoMat').value;
-            if(!nome || !mat || ev === "Evento...") return alert("Preencha todos os dados!");
-            const id = `${mat}-${Date.now().toString().slice(-4)}`;
-            db.ref('ingressos/' + id).set({
-                aluno: nome, matricula: mat, responsavel: "MANUAL", 
-                evento: ev, utilizado: false, data: new Date().toISOString()
-            }).then(() => alert("Ingresso Gerado no Banco!"));
+
+            if(!nome || !mat || eventoId === "Evento...") return alert("Preencha todos os dados!");
+
+            // Busca o limite de ingressos configurado para este evento
+            db.ref('eventos/' + eventoId).once('value', snap => {
+                const evData = snap.val();
+                const limite = parseInt(evData.limit_ingressos) || 1;
+                
+                const batch = {};
+                for(let i = 0; i < limite; i++) {
+                    // ID único por ingresso: matricula + timestamp + index
+                    const id = `${mat}-${Date.now()}-${i}`;
+                    batch['ingressos/' + id] = {
+                        aluno: nome, 
+                        matricula: mat, 
+                        responsavel: "MANUAL", 
+                        evento: evNome, 
+                        utilizado: false, 
+                        data: new Date().toISOString()
+                    };
+                }
+
+                db.ref().update(batch).then(() => {
+                    alert(`✅ ${limite} ingresso(s) gerado(s) com sucesso!`);
+                    document.getElementById('avulsoNome').value = "";
+                    document.getElementById('avulsoMat').value = "";
+                });
+            });
         }
 
-        // 4. Carregar Eventos e Ingressos
+        // 4. Carregar Eventos e Ingressos (Mantido original)
         db.ref('eventos').on('value', snap => {
             const sel = document.getElementById('avulsoEvento');
             const list = document.getElementById('listaAdmin');
