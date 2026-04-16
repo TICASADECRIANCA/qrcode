@@ -12,8 +12,6 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
-        
-        /* ESTILO DO BOTÃO SWITCH (LIBERAR/BLOQUEAR) */
         .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 20px; }
@@ -31,59 +29,72 @@
             </div>
             <div class="font-extrabold text-xl tracking-tighter uppercase italic">CASA<span class="text-blue-400">QR</span> ADMIN</div>
         </div>
-        <button onclick="location.reload()" class="bg-blue-600 px-4 py-2 rounded-lg text-[10px] font-black uppercase">Sincronizar Banco</button>
+        <button onclick="location.reload()" class="bg-blue-600 px-4 py-2 rounded-lg text-[10px] font-black uppercase">Sincronizar</button>
     </nav>
 
     <div id="qrcode-temp" style="display:none"></div>
 
-    <main class="p-6 md:px-12 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <main class="p-6 md:px-12 max-w-7xl mx-auto">
         
-        <div class="lg:col-span-4 space-y-6">
-            
-            <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
-                <h2 class="text-xs font-black text-slate-800 mb-4 uppercase italic">⚙️ Controle de Eventos</h2>
-                <div id="listaEventosControle" class="space-y-3 mb-6">
-                    </div>
-                
-                <div class="space-y-3 pt-4 border-t border-slate-100">
-                    <p class="text-[10px] font-black text-slate-400 uppercase">Novo Evento</p>
-                    <input type="text" id="nome" placeholder="Nome do Evento" class="w-full p-3 bg-slate-50 rounded-xl outline-none font-bold text-sm">
-                    <input type="text" id="data" placeholder="Data (Ex: 20 de Abril)" class="w-full p-3 bg-slate-50 rounded-xl outline-none font-bold text-sm">
-                    <input type="number" id="limit" placeholder="Ingressos por Aluno" class="w-full p-3 bg-slate-50 rounded-xl outline-none font-bold text-sm">
-                    <button onclick="salvarEvento()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-black text-xs uppercase hover:bg-blue-700 transition">Publicar</button>
-                </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Ingressos</p>
+                <h3 id="countTotal" class="text-4xl font-black text-slate-800">0</h3>
             </div>
-
-            <div class="bg-slate-900 p-6 rounded-[2rem] shadow-xl text-white">
-                <h2 class="text-xs font-black mb-4 uppercase italic">🎟️ Emissão Manual</h2>
-                <div class="space-y-3">
-                    <select id="avulsoEvento" class="w-full p-3 bg-slate-800 rounded-xl outline-none font-bold text-xs"></select>
-                    <input type="number" id="avulsoMat" oninput="vincularDadosAluno(this.value)" placeholder="Matrícula" class="w-full p-3 bg-slate-800 rounded-xl outline-none font-bold text-sm">
-                    <input type="text" id="avulsoNome" placeholder="Nome do Aluno" class="w-full p-3 bg-slate-800 rounded-xl outline-none font-bold text-sm">
-                    <button onclick="gerarAvulso()" class="w-full bg-emerald-500 text-white py-3 rounded-xl font-black uppercase text-[10px]">Gerar no Banco</button>
-                </div>
+            <div class="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm border-l-4 border-l-emerald-500">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Validados (Entraram)</p>
+                <h3 id="countValidados" class="text-4xl font-black text-emerald-600">0</h3>
+            </div>
+            <div class="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm border-l-4 border-l-amber-500">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pendentes</p>
+                <h3 id="countPendentes" class="text-4xl font-black text-amber-500">0</h3>
             </div>
         </div>
 
-        <div class="lg:col-span-8">
-            <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-black text-slate-800 italic uppercase">Fluxo de Ingressos</h2>
-                    <input type="text" id="filtroNome" oninput="renderizarTabela()" placeholder="Filtrar aluno..." class="p-3 bg-slate-100 rounded-xl outline-none font-bold text-xs w-48">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <div class="lg:col-span-4 space-y-6">
+                <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
+                    <h2 class="text-xs font-black text-slate-800 mb-4 uppercase italic">⚙️ Controle de Eventos</h2>
+                    <div id="listaEventosControle" class="space-y-3 mb-6"></div>
+                    <div class="space-y-3 pt-4 border-t border-slate-100">
+                        <input type="text" id="nome" placeholder="Nome do Evento" class="w-full p-3 bg-slate-50 rounded-xl outline-none font-bold text-sm">
+                        <input type="text" id="data" placeholder="Data" class="w-full p-3 bg-slate-50 rounded-xl outline-none font-bold text-sm">
+                        <input type="number" id="limit" placeholder="Ingressos por Aluno" class="w-full p-3 bg-slate-50 rounded-xl outline-none font-bold text-sm">
+                        <button onclick="salvarEvento()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-black text-xs uppercase shadow-lg">Publicar</button>
+                    </div>
                 </div>
-                
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left">
-                        <thead>
-                            <tr class="text-[10px] font-black text-slate-400 uppercase border-b border-slate-100">
-                                <th class="pb-4">Aluno</th>
-                                <th class="pb-4">Evento</th>
-                                <th class="pb-4 text-center">Status</th>
-                                <th class="pb-4 text-right">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabelaIngressos" class="text-sm"></tbody>
-                    </table>
+
+                <div class="bg-slate-900 p-6 rounded-[2rem] shadow-xl text-white">
+                    <h2 class="text-xs font-black mb-4 uppercase italic">🎟️ Emissão Manual</h2>
+                    <div class="space-y-3">
+                        <select id="avulsoEvento" class="w-full p-3 bg-slate-800 rounded-xl outline-none font-bold text-xs"></select>
+                        <input type="number" id="avulsoMat" oninput="vincularDadosAluno(this.value)" placeholder="Matrícula" class="w-full p-3 bg-slate-800 rounded-xl outline-none font-bold text-sm">
+                        <input type="text" id="avulsoNome" placeholder="Nome do Aluno" class="w-full p-3 bg-slate-800 rounded-xl outline-none font-bold text-sm">
+                        <button onclick="gerarAvulso()" class="w-full bg-emerald-500 text-white py-3 rounded-xl font-black uppercase text-[10px]">Gerar Ingresso</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-8">
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-black text-slate-800 italic uppercase">Fluxo em Tempo Real</h2>
+                        <input type="text" id="filtroNome" oninput="renderizarTabela()" placeholder="Filtrar aluno..." class="p-3 bg-slate-100 rounded-xl outline-none font-bold text-xs w-48">
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="text-[10px] font-black text-slate-400 uppercase border-b border-slate-100">
+                                    <th class="pb-4">Aluno</th>
+                                    <th class="pb-4">Evento</th>
+                                    <th class="pb-4 text-center">Status</th>
+                                    <th class="pb-4 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaIngressos" class="text-sm"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -101,36 +112,23 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        
         let ingressosCache = [];
         let eventosInfo = {};
 
-        // --- LÓGICA DE EVENTOS (SWITCH E SELECT) ---
+        // GESTÃO DE EVENTOS
         db.ref('eventos').on('value', snap => {
             const cont = document.getElementById('listaEventosControle');
             const sel = document.getElementById('avulsoEvento');
-            cont.innerHTML = "";
-            sel.innerHTML = '<option>Selecionar Evento...</option>';
-            
+            cont.innerHTML = ""; sel.innerHTML = '<option>Selecionar Evento...</option>';
             snap.forEach(i => {
-                const ev = i.val();
-                eventosInfo[ev.nome] = ev.data; // Cache para o PDF
-
-                // Gera a lista com o Switch (Botão de Liberar)
+                const ev = i.val(); eventosInfo[ev.nome] = ev.data;
                 cont.innerHTML += `
                     <div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
                         <span class="text-[11px] font-black uppercase text-slate-700">${ev.nome}</span>
                         <div class="flex items-center gap-3">
-                            <label class="switch">
-                                <input type="checkbox" ${ev.liberado ? 'checked' : ''} onchange="toggleEvento('${i.key}', this.checked)">
-                                <span class="slider"></span>
-                            </label>
-                            <button onclick="if(confirm('Excluir evento?')) db.ref('eventos/${i.key}').remove()" class="text-red-300 hover:text-red-500">
-                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"></path></svg>
-                            </button>
+                            <label class="switch"><input type="checkbox" ${ev.liberado ? 'checked' : ''} onchange="toggleEvento('${i.key}', this.checked)"><span class="slider"></span></label>
                         </div>
                     </div>`;
-
                 sel.innerHTML += `<option value="${i.key}">${ev.nome}</option>`;
             });
         });
@@ -140,15 +138,26 @@
         function salvarEvento() {
             const n = document.getElementById('nome').value;
             const d = document.getElementById('data').value;
-            const l = document.getElementById('limit').value;
-            if(!n || !d) return alert("Preencha os campos!");
-            db.ref('eventos').push({ nome: n, data: d, limit_ingressos: l || 1, liberado: true });
+            if(!n || !d) return alert("Preencha!");
+            db.ref('eventos').push({ nome: n, data: d, limit_ingressos: document.getElementById('limit').value || 1, liberado: true });
         }
 
-        // --- LÓGICA DA TABELA E REIMPRESSÃO ---
+        // LÓGICA DA TABELA E CONTAGEM (DASHBOARD)
         db.ref('ingressos').on('value', snap => {
             ingressosCache = [];
-            snap.forEach(i => ingressosCache.push({key: i.key, ...i.val()}));
+            let validados = 0;
+            
+            snap.forEach(i => {
+                const dado = i.val();
+                ingressosCache.push({key: i.key, ...dado});
+                if(dado.utilizado) validados++;
+            });
+
+            // Atualiza Dashboard
+            document.getElementById('countTotal').innerText = ingressosCache.length;
+            document.getElementById('countValidados').innerText = validados;
+            document.getElementById('countPendentes').innerText = ingressosCache.length - validados;
+
             renderizarTabela();
         });
 
@@ -156,25 +165,18 @@
             const tbody = document.getElementById('tabelaIngressos');
             const filtro = document.getElementById('filtroNome').value.toLowerCase();
             tbody.innerHTML = "";
-            
             ingressosCache.slice().reverse().forEach(ing => {
                 if(ing.aluno.toLowerCase().includes(filtro)) {
                     tbody.innerHTML += `
                         <tr class="border-b border-slate-50">
-                            <td class="py-4">
-                                <div class="font-black text-slate-700 uppercase text-[11px]">${ing.aluno}</div>
-                                <div class="text-[9px] text-slate-400 font-bold">Mat: ${ing.matricula}</div>
-                            </td>
+                            <td class="py-4 px-2"><div class="font-black text-slate-700 uppercase text-[11px]">${ing.aluno}</div></td>
                             <td class="py-4 text-[10px] font-bold text-slate-500 uppercase">${ing.evento}</td>
                             <td class="py-4 text-center">
-                                <button onclick="toggleStatus('${ing.key}', ${ing.utilizado})" 
-                                    class="px-2 py-1 rounded-full text-[9px] font-black ${ing.utilizado ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}">
-                                    ${ing.utilizado ? 'VALIDADO' : 'PENDENTE'}
-                                </button>
+                                <button onclick="toggleStatus('${ing.key}', ${ing.utilizado})" class="px-2 py-1 rounded-full text-[9px] font-black ${ing.utilizado ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}">${ing.utilizado ? 'ENTROU' : 'PENDENTE'}</button>
                             </td>
                             <td class="py-4 text-right space-x-2">
-                                <button onclick="reimprimir('${ing.key}')" class="bg-blue-50 text-blue-600 px-2 py-1 rounded font-black text-[9px] hover:bg-blue-600 hover:text-white transition">IMPRIMIR</button>
-                                <button onclick="if(confirm('Excluir?')) db.ref('ingressos/${ing.key}').remove()" class="text-red-200 hover:text-red-500">Excluir</button>
+                                <button onclick="reimprimir('${ing.key}')" class="bg-blue-50 text-blue-600 px-2 py-1 rounded font-black text-[9px]">IMPRIMIR</button>
+                                <button onclick="if(confirm('Excluir?')) db.ref('ingressos/${ing.key}').remove()" class="text-red-200">Excluir</button>
                             </td>
                         </tr>`;
                 }
@@ -183,36 +185,24 @@
 
         function toggleStatus(id, atual) { db.ref('ingressos/'+id).update({utilizado: !atual}); }
 
-        // --- FUNÇÃO PARA GERAR O PDF DO INGRESSO JÁ EXISTENTE ---
         async function reimprimir(id) {
             const ing = ingressosCache.find(x => x.key === id);
-            if(!ing) return;
             const dataEv = eventosInfo[ing.evento] || "";
-
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-            
-            // Layout (Cópia do layout do Portal)
             doc.setFillColor(30, 64, 175); doc.roundedRect(10, 10, 190, 50, 5, 5, 'F');
             doc.setTextColor(255, 255, 255); doc.setFontSize(22); doc.text("CONVITE INDIVIDUAL", 105, 30, {align: 'center'});
             doc.setFontSize(14); doc.text(ing.evento.toUpperCase(), 105, 45, {align: 'center'});
-            
             doc.setTextColor(30, 41, 59); doc.setFontSize(18); doc.text(ing.aluno, 20, 90);
-            doc.setFontSize(12); doc.text("MATRÍCULA: " + ing.matricula, 20, 100);
-            doc.text("DATA: " + dataEv, 20, 110);
-
-            // QR Code
+            doc.text("MATRÍCULA: " + ing.matricula, 20, 100);
             const qrDiv = document.getElementById('qrcode-temp'); qrDiv.innerHTML = "";
             new QRCode(qrDiv, { text: id, width: 256, height: 256 });
-            
             setTimeout(() => {
-                const canvas = qrDiv.querySelector('canvas');
-                doc.addImage(canvas.toDataURL("image/png"), 'PNG', 140, 75, 45, 45);
-                doc.save(`Ingresso_${ing.aluno}.pdf`);
+                doc.addImage(qrDiv.querySelector('canvas').toDataURL("image/png"), 'PNG', 140, 75, 45, 45);
+                doc.save(`Reimpressao_${ing.aluno}.pdf`);
             }, 500);
         }
 
-        // FUNÇÕES DE EMISSÃO MANUAL
         function vincularDadosAluno(mat) {
             if (mat.length < 2) return;
             db.ref('alunos_db/' + mat).once('value', snap => {
@@ -226,11 +216,9 @@
             const n = document.getElementById('avulsoNome').value;
             const m = document.getElementById('avulsoMat').value;
             if(!n || !m || evId.includes("Selecionar")) return alert("Dados incompletos!");
-
             const id = `${m}-${Date.now()}`;
-            db.ref('ingressos/' + id).set({
-                aluno: n, matricula: m, evento: evNome, utilizado: false, data: new Date().toISOString()
-            }).then(() => alert("Ingresso Gerado!"));
+            db.ref('ingressos/' + id).set({ aluno: n, matricula: m, evento: evNome, utilizado: false, data: new Date().toISOString() })
+            .then(() => alert("Gerado!"));
         }
     </script>
 </body>
