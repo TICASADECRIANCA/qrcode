@@ -36,17 +36,17 @@
 
     <main class="p-6 md:px-12 max-w-7xl mx-auto">
         
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-center md:text-left">
             <div class="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm">
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Ingressos</p>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total de Ingressos Gerados</p>
                 <h3 id="countTotal" class="text-4xl font-black text-slate-800">0</h3>
             </div>
             <div class="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm border-l-4 border-l-emerald-500">
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Validados (Entraram)</p>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Entradas Validadas</p>
                 <h3 id="countValidados" class="text-4xl font-black text-emerald-600">0</h3>
             </div>
             <div class="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm border-l-4 border-l-amber-500">
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pendentes</p>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Aguardando Entrada</p>
                 <h3 id="countPendentes" class="text-4xl font-black text-amber-500">0</h3>
             </div>
         </div>
@@ -55,13 +55,17 @@
             
             <div class="lg:col-span-4 space-y-6">
                 <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
-                    <h2 class="text-xs font-black text-slate-800 mb-4 uppercase italic">⚙️ Controle de Eventos</h2>
-                    <div id="listaEventosControle" class="space-y-3 mb-6"></div>
+                    <h2 class="text-xs font-black text-slate-800 mb-4 uppercase italic">⚙️ Controle de Eventos / Estoque</h2>
+                    <div id="listaEventosControle" class="space-y-3 mb-6 italic"></div>
+                    
                     <div class="space-y-3 pt-4 border-t border-slate-100">
                         <input type="text" id="nome" placeholder="Nome do Evento" class="w-full p-3 bg-slate-50 rounded-xl outline-none font-bold text-sm">
                         <input type="text" id="data" placeholder="Data" class="w-full p-3 bg-slate-50 rounded-xl outline-none font-bold text-sm">
-                        <input type="number" id="limit" placeholder="Ingressos por Aluno" class="w-full p-3 bg-slate-50 rounded-xl outline-none font-bold text-sm">
-                        <button onclick="salvarEvento()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-black text-xs uppercase shadow-lg">Publicar</button>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="number" id="limit" placeholder="Ingr/Aluno" class="p-3 bg-slate-50 rounded-xl outline-none font-bold text-sm">
+                            <input type="number" id="estoqueInicial" placeholder="Qtd Estoque" class="p-3 bg-slate-50 rounded-xl outline-none font-bold text-sm">
+                        </div>
+                        <button onclick="salvarEvento()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-black text-xs uppercase shadow-lg hover:bg-blue-700 transition">Criar Evento com Estoque</button>
                     </div>
                 </div>
 
@@ -71,7 +75,7 @@
                         <select id="avulsoEvento" class="w-full p-3 bg-slate-800 rounded-xl outline-none font-bold text-xs"></select>
                         <input type="number" id="avulsoMat" oninput="vincularDadosAluno(this.value)" placeholder="Matrícula" class="w-full p-3 bg-slate-800 rounded-xl outline-none font-bold text-sm">
                         <input type="text" id="avulsoNome" placeholder="Nome do Aluno" class="w-full p-3 bg-slate-800 rounded-xl outline-none font-bold text-sm">
-                        <button onclick="gerarAvulso()" class="w-full bg-emerald-500 text-white py-3 rounded-xl font-black uppercase text-[10px]">Gerar Ingresso</button>
+                        <button onclick="gerarAvulso()" class="w-full bg-emerald-500 text-white py-3 rounded-xl font-black uppercase text-[10px]">Emitir e Abater Estoque</button>
                     </div>
                 </div>
             </div>
@@ -79,8 +83,8 @@
             <div class="lg:col-span-8">
                 <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200">
                     <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-xl font-black text-slate-800 italic uppercase">Fluxo em Tempo Real</h2>
-                        <input type="text" id="filtroNome" oninput="renderizarTabela()" placeholder="Filtrar aluno..." class="p-3 bg-slate-100 rounded-xl outline-none font-bold text-xs w-48">
+                        <h2 class="text-xl font-black text-slate-800 italic uppercase leading-none">Fluxo de Ingressos</h2>
+                        <input type="text" id="filtroNome" oninput="renderizarTabela()" placeholder="Buscar aluno..." class="p-3 bg-slate-100 rounded-xl outline-none font-bold text-xs w-48">
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left">
@@ -115,18 +119,25 @@
         let ingressosCache = [];
         let eventosInfo = {};
 
-        // GESTÃO DE EVENTOS
+        // GESTÃO DE EVENTOS E ESTOQUE VISÍVEL
         db.ref('eventos').on('value', snap => {
             const cont = document.getElementById('listaEventosControle');
             const sel = document.getElementById('avulsoEvento');
             cont.innerHTML = ""; sel.innerHTML = '<option>Selecionar Evento...</option>';
             snap.forEach(i => {
-                const ev = i.val(); eventosInfo[ev.nome] = ev.data;
+                const ev = i.val(); 
+                eventosInfo[ev.nome] = ev.data;
+                const estoqueClass = ev.estoque <= 10 ? 'text-red-500 animate-pulse' : 'text-blue-600';
+                
                 cont.innerHTML += `
                     <div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
-                        <span class="text-[11px] font-black uppercase text-slate-700">${ev.nome}</span>
+                        <div class="flex flex-col">
+                            <span class="text-[11px] font-black uppercase text-slate-700 leading-tight">${ev.nome}</span>
+                            <span class="text-[9px] font-bold ${estoqueClass} uppercase tracking-tighter">Estoque: ${ev.estoque || 0} restando</span>
+                        </div>
                         <div class="flex items-center gap-3">
                             <label class="switch"><input type="checkbox" ${ev.liberado ? 'checked' : ''} onchange="toggleEvento('${i.key}', this.checked)"><span class="slider"></span></label>
+                            <button onclick="if(confirm('Excluir?')) db.ref('eventos/${i.key}').remove()" class="text-red-200 hover:text-red-500 transition">×</button>
                         </div>
                     </div>`;
                 sel.innerHTML += `<option value="${i.key}">${ev.nome}</option>`;
@@ -138,26 +149,29 @@
         function salvarEvento() {
             const n = document.getElementById('nome').value;
             const d = document.getElementById('data').value;
-            if(!n || !d) return alert("Preencha!");
-            db.ref('eventos').push({ nome: n, data: d, limit_ingressos: document.getElementById('limit').value || 1, liberado: true });
+            const est = document.getElementById('estoqueInicial').value;
+            if(!n || !d || !est) return alert("Preencha Nome, Data e Estoque!");
+            db.ref('eventos').push({ 
+                nome: n, 
+                data: d, 
+                limit_ingressos: document.getElementById('limit').value || 1, 
+                estoque: parseInt(est),
+                liberado: true 
+            }).then(() => { alert("Evento criado!"); location.reload(); });
         }
 
-        // LÓGICA DA TABELA E CONTAGEM (DASHBOARD)
+        // LÓGICA DA TABELA E DASHBOARD
         db.ref('ingressos').on('value', snap => {
             ingressosCache = [];
             let validados = 0;
-            
             snap.forEach(i => {
                 const dado = i.val();
                 ingressosCache.push({key: i.key, ...dado});
                 if(dado.utilizado) validados++;
             });
-
-            // Atualiza Dashboard
             document.getElementById('countTotal').innerText = ingressosCache.length;
             document.getElementById('countValidados').innerText = validados;
             document.getElementById('countPendentes').innerText = ingressosCache.length - validados;
-
             renderizarTabela();
         });
 
@@ -169,10 +183,13 @@
                 if(ing.aluno.toLowerCase().includes(filtro)) {
                     tbody.innerHTML += `
                         <tr class="border-b border-slate-50">
-                            <td class="py-4 px-2"><div class="font-black text-slate-700 uppercase text-[11px]">${ing.aluno}</div></td>
-                            <td class="py-4 text-[10px] font-bold text-slate-500 uppercase">${ing.evento}</td>
+                            <td class="py-4 px-2">
+                                <div class="font-black text-slate-700 uppercase text-[11px]">${ing.aluno}</div>
+                                <div class="text-[9px] text-slate-400 font-bold">Mat: ${ing.matricula}</div>
+                            </td>
+                            <td class="py-4 text-[10px] font-bold text-slate-500 uppercase italic">${ing.evento}</td>
                             <td class="py-4 text-center">
-                                <button onclick="toggleStatus('${ing.key}', ${ing.utilizado})" class="px-2 py-1 rounded-full text-[9px] font-black ${ing.utilizado ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}">${ing.utilizado ? 'ENTROU' : 'PENDENTE'}</button>
+                                <button onclick="toggleStatus('${ing.key}', ${ing.utilizado})" class="px-2 py-1 rounded-full text-[9px] font-black ${ing.utilizado ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}">${ing.utilizado ? 'VALIDADO' : 'PENDENTE'}</button>
                             </td>
                             <td class="py-4 text-right space-x-2">
                                 <button onclick="reimprimir('${ing.key}')" class="bg-blue-50 text-blue-600 px-2 py-1 rounded font-black text-[9px]">IMPRIMIR</button>
@@ -185,22 +202,25 @@
 
         function toggleStatus(id, atual) { db.ref('ingressos/'+id).update({utilizado: !atual}); }
 
-        async function reimprimir(id) {
-            const ing = ingressosCache.find(x => x.key === id);
-            const dataEv = eventosInfo[ing.evento] || "";
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            doc.setFillColor(30, 64, 175); doc.roundedRect(10, 10, 190, 50, 5, 5, 'F');
-            doc.setTextColor(255, 255, 255); doc.setFontSize(22); doc.text("CONVITE INDIVIDUAL", 105, 30, {align: 'center'});
-            doc.setFontSize(14); doc.text(ing.evento.toUpperCase(), 105, 45, {align: 'center'});
-            doc.setTextColor(30, 41, 59); doc.setFontSize(18); doc.text(ing.aluno, 20, 90);
-            doc.text("MATRÍCULA: " + ing.matricula, 20, 100);
-            const qrDiv = document.getElementById('qrcode-temp'); qrDiv.innerHTML = "";
-            new QRCode(qrDiv, { text: id, width: 256, height: 256 });
-            setTimeout(() => {
-                doc.addImage(qrDiv.querySelector('canvas').toDataURL("image/png"), 'PNG', 140, 75, 45, 45);
-                doc.save(`Reimpressao_${ing.aluno}.pdf`);
-            }, 500);
+        // EMISSÃO MANUAL COM ABATIMENTO DE ESTOQUE
+        function gerarAvulso() {
+            const evId = document.getElementById('avulsoEvento').value;
+            const evNome = document.getElementById('avulsoEvento').options[document.getElementById('avulsoEvento').selectedIndex].text;
+            const n = document.getElementById('avulsoNome').value;
+            const m = document.getElementById('avulsoMat').value;
+            if(!n || !m || evId.includes("Selecionar")) return alert("Dados incompletos!");
+
+            db.ref('eventos/' + evId).once('value', snap => {
+                const estoqueAtual = snap.val().estoque;
+                if(estoqueAtual <= 0) return alert("ESTOQUE ESGOTADO PARA ESTE EVENTO!");
+
+                const id = `${m}-${Date.now()}`;
+                db.ref('ingressos/' + id).set({ aluno: n, matricula: m, evento: evNome, utilizado: false, data: new Date().toISOString() })
+                .then(() => {
+                    db.ref('eventos/' + evId).update({ estoque: estoqueAtual - 1 });
+                    alert("Ingresso gerado e estoque atualizado!");
+                });
+            });
         }
 
         function vincularDadosAluno(mat) {
@@ -210,15 +230,23 @@
             });
         }
 
-        function gerarAvulso() {
-            const evId = document.getElementById('avulsoEvento').value;
-            const evNome = document.getElementById('avulsoEvento').options[document.getElementById('avulsoEvento').selectedIndex].text;
-            const n = document.getElementById('avulsoNome').value;
-            const m = document.getElementById('avulsoMat').value;
-            if(!n || !m || evId.includes("Selecionar")) return alert("Dados incompletos!");
-            const id = `${m}-${Date.now()}`;
-            db.ref('ingressos/' + id).set({ aluno: n, matricula: m, evento: evNome, utilizado: false, data: new Date().toISOString() })
-            .then(() => alert("Gerado!"));
+        async function reimprimir(id) {
+            const ing = ingressosCache.find(x => x.key === id);
+            const dataEv = eventosInfo[ing.evento] || "";
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFillColor(30, 64, 175); doc.roundedRect(10, 10, 190, 50, 5, 5, 'F');
+            doc.setTextColor(255, 255, 255); doc.setFontSize(22); doc.text("CONVITE INDIVIDUAL", 105, 30, {align: 'center'});
+            doc.setFontSize(14); doc.text(ing.evento.toUpperCase(), 105, 45, {align: 'center'});
+            doc.setTextColor(30, 41, 59); doc.setFontSize(18); doc.text(ing.aluno, 20, 90);
+            doc.setFontSize(12); doc.text("MATRÍCULA: " + ing.matricula, 20, 100);
+            doc.text("DATA: " + dataEv, 20, 110);
+            const qrDiv = document.getElementById('qrcode-temp'); qrDiv.innerHTML = "";
+            new QRCode(qrDiv, { text: id, width: 256, height: 256 });
+            setTimeout(() => {
+                doc.addImage(qrDiv.querySelector('canvas').toDataURL("image/png"), 'PNG', 140, 75, 45, 45);
+                doc.save(`Reimpressao_${ing.aluno}.pdf`);
+            }, 500);
         }
     </script>
 </body>
