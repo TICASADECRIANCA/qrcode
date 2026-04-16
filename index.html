@@ -84,7 +84,6 @@
         const db = firebase.database();
         let currentEv = null;
 
-        // Renderiza Eventos
         db.ref('eventos').on('value', snap => {
             const cont = document.getElementById('listaEventos'); cont.innerHTML = "";
             snap.forEach(i => {
@@ -101,7 +100,7 @@
             });
         });
 
-        // BUSCA INSTANTÂNEA DE NOME PELO CPF
+        // BUSCA INSTANTÂNEA E VÍNCULO AUTOMÁTICO
         async function buscarResponsavelPorCPF() {
             const cpfInput = document.getElementById('cpfResponsavel');
             const nomeRespAuto = document.getElementById('nomeResponsavelAuto');
@@ -109,33 +108,29 @@
 
             if (cpf.length === 11) {
                 nomeRespAuto.value = "🔍 Localizando responsável...";
-                nomeRespAuto.classList.add('animate__pulse');
-                
                 const snap = await db.ref('alunos_db').once('value');
                 let encontrado = false;
 
                 snap.forEach(alunoSnap => {
                     const d = alunoSnap.val();
-                    if (cpf === d.cpf_pai) {
-                        nomeRespAuto.value = "✅ Identificado: " + d.nome_pai;
-                        encontrado = true; return true; 
-                    } else if (cpf === d.cpf_mae) {
-                        nomeRespAuto.value = "✅ Identificada: " + d.nome_mae;
-                        encontrado = true; return true;
+                    const matricula = alunoSnap.key;
+                    if (cpf === d.cpf_pai || cpf === d.cpf_mae) {
+                        nomeRespAuto.value = "✅ " + (cpf === d.cpf_pai ? d.nome_pai : d.nome_mae);
+                        encontrado = true;
+                        
+                        // AJUSTE: Preenche a matrícula no primeiro campo de filho automaticamente
+                        const primeiraMat = document.querySelector('.m-aluno');
+                        if(primeiraMat && !primeiraMat.value) {
+                            primeiraMat.value = matricula;
+                            verificarMatricula(primeiraMat);
+                        }
+                        return true; 
                     }
                 });
 
                 if (!encontrado) {
                     nomeRespAuto.value = "⚠️ CPF não encontrado na base.";
-                    nomeRespAuto.classList.remove('text-blue-700');
-                    nomeRespAuto.classList.add('text-red-500');
-                } else {
-                    nomeRespAuto.classList.remove('text-red-500');
-                    nomeRespAuto.classList.add('text-blue-700');
                 }
-                nomeRespAuto.classList.remove('animate__pulse');
-            } else {
-                nomeRespAuto.value = "Aguardando CPF completo...";
             }
         }
 
@@ -146,21 +141,13 @@
             document.getElementById('filhos').innerHTML = "";
             document.getElementById('cpfResponsavel').value = "";
             document.getElementById('nomeResponsavelAuto').value = "Aguardando CPF...";
-            addFilho();
+            addFilho(); // Cria o primeiro campo
             const modal = document.getElementById('modalIngresso');
-            const content = document.getElementById('modalContent');
             modal.classList.remove('hidden');
-            content.classList.add('animate__zoomIn');
         }
 
         function fecharModal() {
-            const modal = document.getElementById('modalIngresso');
-            const content = document.getElementById('modalContent');
-            content.classList.replace('animate__zoomIn', 'animate__zoomOut');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                content.classList.remove('animate__zoomOut');
-            }, 300);
+            document.getElementById('modalIngresso').classList.add('hidden');
         }
 
         async function verificarMatricula(inputMat) {
@@ -177,14 +164,14 @@
                     campoNomeAlu.value = d.nome + " [" + d.turma + "]";
                 } else {
                     alert("⚠️ Este CPF não é responsável por esta matrícula.");
-                    inputMat.value = "";
+                    inputMat.value = ""; campoNomeAlu.value = "";
                 }
             } else { alert("Matrícula não cadastrada."); inputMat.value = ""; }
         }
 
         function addFilho() {
             const div = document.createElement('div');
-            div.className = "p-5 bg-slate-50 rounded-[1.5rem] border border-slate-100 animate__animated animate__fadeInLeft animate__faster";
+            div.className = "p-5 bg-slate-50 rounded-[1.5rem] border border-slate-100 mb-3";
             div.innerHTML = `
                 <input type="text" placeholder="Nome do Aluno..." readonly class="n-aluno w-full bg-transparent font-black outline-none text-blue-700 text-[12px] mb-2 cursor-not-allowed italic uppercase">
                 <input type="number" placeholder="Digite a Matrícula" class="m-aluno w-full bg-white p-3 rounded-xl border border-slate-200 text-sm outline-none font-bold" onchange="verificarMatricula(this)">
@@ -192,6 +179,7 @@
             document.getElementById('filhos').appendChild(div);
         }
 
+        // PROCESSAR: AJUSTADO PARA GERAR QUANTIDADE CONFIGURADA (LIMITE)
         async function processar() {
             const nomes = document.querySelectorAll('.n-aluno');
             const mats = document.querySelectorAll('.m-aluno');
@@ -203,30 +191,43 @@
             try {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
+                const limitePorAluno = parseInt(currentEv.limit_ingressos) || 1; // Pega o limite do Admin
+                let paginaAtiva = false;
                 
-                for(let i=0; i<nomes.length; i++) {
-                    const n = nomes[i].value; const m = mats[i].value;
+                for(let i=0; i < nomes.length; i++) {
+                    const n = nomes[i].value; 
+                    const m = mats[i].value;
                     if(!n) continue;
-                    const idUnico = `${m}-${Date.now().toString().slice(-4)}`;
-                    if(i > 0) doc.addPage();
-                    
-                    doc.setFillColor(30, 64, 175); doc.roundedRect(10, 10, 190, 50, 5, 5, 'F');
-                    doc.setTextColor(255, 255, 255); doc.setFontSize(22); doc.text("CONVITE INDIVIDUAL", 105, 30, {align: 'center'});
-                    doc.setFontSize(14); doc.text(currentEv.nome.toUpperCase(), 105, 45, {align: 'center'});
-                    
-                    doc.setTextColor(30, 41, 59); doc.setFontSize(18); doc.text(n, 20, 90);
-                    doc.setFontSize(12); doc.text("DATA: " + currentEv.data, 20, 105);
 
-                    const qrDiv = document.getElementById('qrcode-temp'); qrDiv.innerHTML = "";
-                    new QRCode(qrDiv, { text: idUnico, width: 256, height: 256 });
-                    await new Promise(r => setTimeout(r, 400));
-                    doc.addImage(qrDiv.querySelector('canvas').toDataURL("image/png"), 'PNG', 140, 75, 45, 45);
+                    // LOOP INTERNO: Gera a quantidade de ingressos configurada (Ex: 2 para cada filho)
+                    for(let j=0; j < limitePorAluno; j++) {
+                        const idUnico = `${m}-${Date.now()}-${i}-${j}`;
+                        
+                        if(paginaAtiva) doc.addPage();
+                        paginaAtiva = true;
+                        
+                        // Layout do Ingresso
+                        doc.setFillColor(30, 64, 175); doc.roundedRect(10, 10, 190, 50, 5, 5, 'F');
+                        doc.setTextColor(255, 255, 255); doc.setFontSize(22); doc.text("CONVITE INDIVIDUAL", 105, 30, {align: 'center'});
+                        doc.setFontSize(14); doc.text(currentEv.nome.toUpperCase(), 105, 45, {align: 'center'});
+                        
+                        doc.setTextColor(30, 41, 59); doc.setFontSize(18); doc.text(n, 20, 90);
+                        doc.setFontSize(12); doc.text("DATA: " + currentEv.data, 20, 105);
+                        doc.text("INGRESSO " + (j + 1) + " DE " + limitePorAluno, 20, 115);
 
-                    await db.ref('ingressos/' + idUnico).set({ 
-                        aluno: n, matricula: m, evento: currentEv.nome, utilizado: false, data: new Date().toISOString() 
-                    });
+                        const qrDiv = document.getElementById('qrcode-temp'); qrDiv.innerHTML = "";
+                        new QRCode(qrDiv, { text: idUnico, width: 256, height: 256 });
+                        await new Promise(r => setTimeout(r, 400));
+                        doc.addImage(qrDiv.querySelector('canvas').toDataURL("image/png"), 'PNG', 140, 75, 45, 45);
+
+                        // Salva no Banco
+                        await db.ref('ingressos/' + idUnico).set({ 
+                            aluno: n, matricula: m, evento: currentEv.nome, utilizado: false, data: new Date().toISOString() 
+                        });
+                    }
                 }
-                doc.save(`CASAQR_${currentEv.nome}.pdf`);
+                
+                doc.save(`Ingressos_${currentEv.nome}.pdf`);
                 document.getElementById('loader').classList.add('hidden');
                 document.getElementById('successIcon').classList.remove('hidden');
                 document.getElementById('statusMsg').innerText = "Sucesso!";
